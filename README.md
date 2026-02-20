@@ -16,3 +16,19 @@
 - As a user, I want to select peer groups by size or region to see comparison charts and statistics so that I can evaluate our competitiveness.
 - As a user, I want suspicious admissions values flagged so that I can review potential mistakes.
 
+# Summary:
+## What's done:
+- Created a template for frontend and backend
+- Connected to MongoDB
+- Implemented JWT
+- Created models for the data
+
+## What's next:
+- make user stories to seperate user and admin
+- change frontend to TailwindCSS
+- categorize stories into epics
+- making the form
+- making the dashboard
+    - dont have to filter yet
+    - chart.js boards
+- import data provided my prof
