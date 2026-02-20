@@ -1,18 +1,31 @@
-const express = require("express");
-// const cors = require("cors");
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// middleware
+// Middleware
+app.use(cors());
 app.use(express.json());
-// app.use(cors()); // enable if frontend is on a different origin/port
 
-// test route
-app.get("/api/health", (req, res) => {
-    res.json({ ok: true, message: "Backend is running" });
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log('MongoDB connection error:', err));
+
+
+
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/dashboard', require('./routes/dashboard'));
+
+app.get('/', (req, res) => {
+  res.json({ message: 'Hi, this is the first iteration' });
 });
 
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Backend listening on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
