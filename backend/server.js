@@ -20,6 +20,7 @@ mongoose.connect(process.env.MONGODB_URI)
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/admission', require('./routes/admission'));
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hi, this is the first iteration' });
