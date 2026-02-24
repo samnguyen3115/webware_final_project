@@ -34,7 +34,7 @@ export function useDashboardData({ schoolId }) {
                 const a = parseCsv(activityText);
                 const e = parseCsv(enrollmentText);
 
-                if (!alive) return;
+                if (!alive) return undefined;
 
                 setActivityRows(a);
                 setEnrollmentRows(e);
@@ -47,11 +47,13 @@ export function useDashboardData({ schoolId }) {
 
                 setSchoolYearId((prev) => prev ?? years[years.length - 1] ?? null);
             } catch (e2) {
-                if (!alive) return;
-                setErr(e2?.message || "Failed to load dashboard data");
+                if (alive) {
+                    setErr(e2?.message || "Failed to load dashboard data");
+                }
             } finally {
-                if (!alive) return;
-                setLoading(false);
+                if (alive) {
+                    setLoading(false);
+                }
             }
         }
 
