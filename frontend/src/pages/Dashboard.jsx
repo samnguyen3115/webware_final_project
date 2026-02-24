@@ -1,24 +1,86 @@
-import React, { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
-import './Dashboard.css';
+// src/pages/Dashboard.jsx
+import React, { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import "../App.css";
 
-const Dashboard = () => {
-  const { logout } = useContext(AuthContext);
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+
+import DashboardHeader from "../components/dashboard/DashboardHeader";
+import DashboardControls from "../components/dashboard/DashboardControls";
+import KpiCards from "../components/dashboard/KpiCards";
+import ChartsSection from "../components/dashboard/ChartsSection";
+import { useDashboardData } from "../hooks/useDashboardData";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+export default function Dashboard() {
+  const { logout, user } = useContext(AuthContext) || {};
+  const schoolId = user?.schoolId ?? 1;
+
+  const {
+    category,
+    setCategory,
+    loading,
+    err,
+    activityRows,
+    enrollmentRows,
+    schoolYearId,
+    setSchoolYearId,
+    availableYears,
+    kpis,
+    pipelineLineData,
+    genderDoughnutData,
+    enrollmentBarData,
+  } = useDashboardData({ schoolId });
 
   return (
-    <div className="dashboard-container">
-      <header className="dashboard-header">
-        <h1>Dashboard</h1>
-        <button onClick={logout} className="logout-btn">Logout</button>
-      </header>
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} />
 
-      <div className="dashboard-content">
-        <div className="welcome-card">
-          <h2>Hi, this is the first iteration</h2>
-        </div>
-      </div>
+      <main className="mx-auto px-4 py-6">
+        <DashboardControls
+          category={category}
+          setCategory={setCategory}
+          schoolYearId={schoolYearId}
+          setSchoolYearId={setSchoolYearId}
+          availableYears={availableYears}
+          loading={loading}
+          err={err}
+          activityRowsCount={activityRows.length}
+          enrollmentRowsCount={enrollmentRows.length}
+        />
+
+        <KpiCards kpis={kpis} />
+
+        <ChartsSection
+          category={category}
+          pipelineLineData={pipelineLineData}
+          genderDoughnutData={genderDoughnutData}
+          enrollmentBarData={enrollmentBarData}
+        />
+
+      </main>
     </div>
   );
-};
-
-export default Dashboard;
+}
