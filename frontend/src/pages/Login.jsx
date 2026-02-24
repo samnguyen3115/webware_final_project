@@ -34,11 +34,11 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-900 to-black px-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-10 shadow-2xl">
-        <h1 className="mb-8 text-center text-3xl font-semibold text-zinc-800">Login</h1>
+    <div className="flex min-h-screen items-center justify-center bg-white px-4">
+      <div className="w-full max-w-md rounded-xl bg-gray-100 p-10 shadow-2xl">
+        <h1 className="mb-8 text-center text-3xl font-semibold text-black">Login</h1>
         {error && (
-          <div className="mb-5 rounded-md border border-red-200 bg-red-100 p-3 text-sm text-red-700">
+          <div className="mb-5 rounded-md border border-gray-400 bg-gray-200 p-3 text-sm text-black">
             {error}
           </div>
         )}
@@ -49,7 +49,7 @@ const Login = () => {
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
-            className="rounded-md border border-zinc-300 px-3 py-3 text-sm text-zinc-800 outline-none transition focus:border-zinc-700 focus:ring-2 focus:ring-zinc-300"
+            className="rounded-md border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
             required
           />
           <input
@@ -58,20 +58,20 @@ const Login = () => {
             placeholder="Password"
             value={formData.password}
             onChange={handleChange}
-            className="rounded-md border border-zinc-300 px-3 py-3 text-sm text-zinc-800 outline-none transition focus:border-zinc-700 focus:ring-2 focus:ring-zinc-300"
+            className="rounded-md border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
             required
           />
           <button
             type="submit"
             disabled={loading}
-            className="rounded-md bg-gradient-to-br from-zinc-700 to-black px-3 py-3 text-base font-bold text-white transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70"
+            className="rounded-md bg-black px-3 py-3 text-base font-bold text-white transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-zinc-500">
+        <p className="mt-6 text-center text-sm text-gray-700">
           Don&apos;t have an account?{' '}
-          <a href="/signup" className="font-semibold text-zinc-700 hover:underline">
+          <a href="/signup" className="font-semibold text-black hover:underline">
             Sign up
           </a>
         </p>

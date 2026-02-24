@@ -13,12 +13,12 @@ export default function ChartsSection({
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { labels: { color: "#e5e7eb" } },
+                legend: { labels: { color: "#000000" } },
                 tooltip: { enabled: true },
             },
             scales: {
-                x: { ticks: { color: "#e5e7eb" }, grid: { color: "rgba(255,255,255,0.08)" } },
-                y: { ticks: { color: "#e5e7eb" }, grid: { color: "rgba(255,255,255,0.08)" } },
+                x: { ticks: { color: "#000000" }, grid: { color: "rgba(0,0,0,0.1)" } },
+                y: { ticks: { color: "#000000" }, grid: { color: "rgba(0,0,0,0.1)" } },
             },
         }),
         []
@@ -29,7 +29,7 @@ export default function ChartsSection({
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { labels: { color: "#e5e7eb" } },
+                legend: { labels: { color: "#000000" } },
             },
         }),
         []
@@ -39,20 +39,20 @@ export default function ChartsSection({
         <section className="grid gap-4 lg:grid-cols-2">
             {category === "Admissions" ? (
                 <>
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="rounded-2xl border border-gray-400 bg-white p-4">
                         <div className="mb-2 flex items-baseline justify-between">
-                            <h3 className="text-sm font-semibold">Admissions pipeline</h3>
-                            <div className="text-xs text-slate-400">Derived from ADMISSION_ACTIVITY.csv</div>
+                            <h3 className="text-sm font-semibold text-black">Admissions pipeline</h3>
+                            <div className="text-xs text-gray-600"></div>
                         </div>
                         <div className="h-72">
                             <Line data={pipelineLineData} options={chartOptions} />
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="rounded-2xl border border-gray-400 bg-white p-4">
                         <div className="mb-2 flex items-baseline justify-between">
-                            <h3 className="text-sm font-semibold">New enrollments by gender</h3>
-                            <div className="text-xs text-slate-400">Derived from ADMISSION_ACTIVITY.csv</div>
+                            <h3 className="text-sm font-semibold text-black">New enrollments by gender</h3>
+                            <div className="text-xs text-gray-600"></div>
                         </div>
                         <div className="h-72">
                             <Doughnut data={genderDoughnutData} options={doughnutOptions} />
@@ -60,10 +60,10 @@ export default function ChartsSection({
                     </div>
                 </>
             ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 lg:col-span-2">
+                <div className="rounded-2xl border border-gray-400 bg-white p-4 lg:col-span-2">
                     <div className="mb-2 flex items-baseline justify-between">
-                        <h3 className="text-sm font-semibold">Enrollment totals by type</h3>
-                        <div className="text-xs text-slate-400">
+                        <h3 className="text-sm font-semibold text-black">Enrollment totals by type</h3>
+                        <div className="text-xs text-gray-600">
                             Derived from ADMISSION_ACTIVITY_ENROLLMENT.csv
                         </div>
                     </div>

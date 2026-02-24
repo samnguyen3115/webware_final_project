@@ -130,6 +130,8 @@ export function useDashboardData({ schoolId }) {
                     data,
                     fill: true,
                     tension: 0.35,
+                    borderColor: "#000000",
+                    backgroundColor: "rgba(0, 0, 0, 0.1)",
                 },
             ],
         };
@@ -142,6 +144,8 @@ export function useDashboardData({ schoolId }) {
                 {
                     label: "New Enrollments",
                     data: [admissionsAgg.enrollBoys, admissionsAgg.enrollGirls],
+                    backgroundColor: ["#404040", "#808080"],
+                    borderColor: "#000000",
                 },
             ],
         };
@@ -164,6 +168,8 @@ export function useDashboardData({ schoolId }) {
                 {
                     label: "Total",
                     data: values,
+                    backgroundColor: "#606060",
+                    borderColor: "#000000",
                 },
             ],
         };
@@ -184,7 +190,7 @@ export function useDashboardData({ schoolId }) {
                 sub: "New enrollments / Acceptances",
             },
             {
-                label: "Inquiry → App",
+                label: "Inquiry to Application",
                 valueText: formatPct(admissionsAgg.inquiryToApp),
                 tone: getKpiCardTone(admissionsAgg.inquiryToApp, "rate"),
                 sub: "Applications / Inquiries",
@@ -192,7 +198,7 @@ export function useDashboardData({ schoolId }) {
             {
                 label: "New enrollments",
                 valueText: formatNum(admissionsAgg.enrollTotal),
-                tone: "border-white/10",
+                tone: "border-gray-400/50",
                 sub: "Total for selected year",
             },
             {

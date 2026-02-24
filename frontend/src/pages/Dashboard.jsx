@@ -55,7 +55,7 @@ export default function Dashboard() {
   } = useDashboardData({ schoolId });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-white text-black">
       <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} />
 
       <main className="mx-auto px-4 py-6">
