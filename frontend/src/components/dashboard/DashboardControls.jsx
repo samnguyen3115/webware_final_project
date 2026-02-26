@@ -1,6 +1,6 @@
 import React from "react";
 import { formatNum } from "../../utils/format";
-
+import { Link } from "react-router-dom"; //i added
 export default function DashboardControls({
     category,
     setCategory,
@@ -59,6 +59,15 @@ export default function DashboardControls({
                     </div>
                 ) : null}
             </div>
+            {/*Benchmark Form */}
+             <div className="rounded-xl border border-gray-400 bg-white p-4 flex items-center justify-center">
+                <Link
+                    to="/dashboard/benchmark"
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                >
+                    Open Benchmark Form
+                </Link>
+        </div>
         </div>
     );
 }

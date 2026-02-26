@@ -5,7 +5,9 @@ import ProtectedRoute from './context/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import BenchmarkForm from './components/BenchmarkForm.jsx';  //i added
 import './App.css';
+
 
 function App() {
   return (
@@ -22,6 +24,14 @@ function App() {
                   <Dashboard />
                 </ProtectedRoute>
               }
+            />
+            <Route                //i added
+            path="/dashboard/benchmark"
+            element={
+              <ProtectedRoute>
+              <BenchmarkForm />
+              </ProtectedRoute>
+            }
             />
             <Route path="/" element={<Navigate to="/dashboard" />} />
           </Routes>
