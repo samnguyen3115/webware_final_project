@@ -36,7 +36,7 @@ ChartJS.register(
 
 export default function Dashboard() {
   const { logout, user } = useContext(AuthContext) || {};
-  const schoolId = user?.schoolId ?? 1;
+  const schoolId = user?.SCHOOL_ID ?? 1;
 
   const {
     category,
