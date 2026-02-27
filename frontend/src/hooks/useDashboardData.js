@@ -15,6 +15,34 @@ export function useDashboardData({ schoolId }) {
     useEffect(() => {
         let alive = true;
 
+        async function fetchDataArray(url, datasetName, headers) {
+            const response = await fetch(url, { headers });
+
+            if (response.status === 401) {
+                throw new Error("Session expired. Please log in again.");
+            }
+
+            if (response.status === 204) {
+                return [];
+            }
+
+            if (!response.ok) {
+                throw new Error(`${datasetName} fetch failed: ${response.status}`);
+            }
+
+            const raw = await response.text();
+            if (!raw) {
+                return [];
+            }
+
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                throw new Error(`${datasetName} returned invalid JSON`);
+            }
+        }
+
         async function load() {
             setLoading(true);
             setErr("");
@@ -32,17 +60,9 @@ export function useDashboardData({ schoolId }) {
                 };
 
                 // Fetch data from API - middleware ensures user only gets their school's data
-                const activityRes = await fetch("http://localhost:5000/api/admission/activity", { headers });
-                if (!activityRes.ok) throw new Error(`Activity fetch failed: ${activityRes.status}`);
-                const a = await activityRes.json();
-
-                const enrollmentRes = await fetch("http://localhost:5000/api/admission/enrollment", { headers });
-                if (!enrollmentRes.ok) throw new Error(`Enrollment fetch failed: ${enrollmentRes.status}`);
-                const e = await enrollmentRes.json();
-
-                const socRes = await fetch("http://localhost:5000/api/admission/activity-soc", { headers });
-                if (!socRes.ok) throw new Error(`SOC fetch failed: ${socRes.status}`);
-                const s = await socRes.json();
+                const a = await fetchDataArray("http://localhost:5000/api/admission/activity", "Activity", headers);
+                const e = await fetchDataArray("http://localhost:5000/api/admission/enrollment", "Enrollment", headers);
+                const s = await fetchDataArray("http://localhost:5000/api/admission/activity-soc", "SOC", headers);
 
                 if (!alive) return undefined;
 

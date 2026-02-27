@@ -51,7 +51,7 @@ export default function DashboardControls({
 
             <div className="rounded-xl border border-gray-400 bg-white p-4">
                 <label className="block text-xs font-medium text-gray-700">Data status</label>
-                <div className="mt-2 text-sm text-black">{loading ? "Loading CSVs…" : err ? "Error" : "Ready"}</div>
+                <div className="mt-2 text-sm text-black">{loading ? "Loading API data…" : err ? "Error" : "Ready"}</div>
                 {err ? <div className="mt-2 text-xs text-black">{err}</div> : null}
                 {!err && !loading ? (
                     <div className="mt-2 text-xs text-gray-600">
