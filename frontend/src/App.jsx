@@ -25,10 +25,10 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route                //i added
-            path="/dashboard/benchmark"
+            <Route
+            path="/benchmark"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRole="admin">
               <BenchmarkForm />
               </ProtectedRoute>
             }

@@ -5,7 +5,7 @@ const User = require('../models/User');
 
 router.get('/data', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select('-password');
+    const user = await User.findById(req.user.userId).select('-password');
     
     res.json({
       message: 'Welcome to dashboard',

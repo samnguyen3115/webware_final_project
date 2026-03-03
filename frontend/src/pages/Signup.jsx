@@ -4,7 +4,7 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
 const Signup = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'school' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -25,7 +25,13 @@ const Signup = () => {
     try {
       const response = await axios.post('/api/auth/signup', formData);
       login(response.data.token, response.data.user);
-      navigate('/dashboard');
+      
+      if (response.data.user.role  === "admin"){
+        navigate('/benchmark');
+      } else {
+        navigate('/dashboard');
+      }
+
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed');
     } finally {
@@ -70,6 +76,16 @@ const Signup = () => {
             className="rounded-md border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
             required
           />
+          <select
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            className="rounded-mb border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
+            required
+          >
+            <option value="school">School User</option>
+            <option value="admin">Admin</option>
+          </select>
           <button
             type="submit"
             disabled={loading}

@@ -7,6 +7,9 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const[loginType, setLoginType] = useState("school"); // can be school or admin
+
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
@@ -24,8 +27,22 @@ const Login = () => {
 
     try {
       const response = await axios.post('/api/auth/login', formData);
+      const userRole = response.data.user.role;
+
+      if (userRole !== loginType) {
+        setError(`This account is not registered as a ${loginType} user.`);
+        setLoading(false);
+        return;
+      }
+
       login(response.data.token, response.data.user);
-      navigate('/dashboard');
+
+      if (userRole === "admin"){
+        navigate('/benchmark');
+      } else {
+        navigate('/dashboard');
+      }
+
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {
@@ -36,12 +53,24 @@ const Login = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-white px-4">
       <div className="w-full max-w-md rounded-xl bg-gray-100 p-10 shadow-2xl">
-        <h1 className="mb-8 text-center text-3xl font-semibold text-black">Login</h1>
+        <h1 className="mb-6 text-center text-3xl font-semibold text-black">{loginType === "admin" ? "Admin Login" : "User Login"}</h1>
+        <div className="mb-6 flex justify-center gap-4">
+          <button type="button"
+          onClick={() => setLoginType("school")}
+          className={`px-2 py-2 rounded-md ${loginType === "school" ? "bg-black text-white" : "bg-gray-300 text-black"}`}>School User</button>
+
+          <button type="button"
+          onClick={() => setLoginType("admin")}
+          className={`px-2 py-2 rounded-md ${loginType === "admin" ? "bg-black text-white" : "bg-gray-300 text-black"}`}>Admin</button>
+
+        </div>
+
         {error && (
           <div className="mb-5 rounded-md border border-gray-400 bg-gray-200 p-3 text-sm text-black">
             {error}
           </div>
         )}
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="email"
