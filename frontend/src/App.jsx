@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import './App.css';
 // import SpeechRecognition, {useSpeechRecognition} from "react-speech-recognition";
 import "regenerator-runtime/runtime";
+import RouteCommands from "./components/RouteCommands.jsx";
 import VoiceInput from "./components/VoiceInput.jsx";
 
 // function VoiceRouter() {
@@ -47,6 +48,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+          <RouteCommands />
           {/*<VoiceRouter />*/}
         <div className="app-container">
             {/*<VoiceInput commands ={commands} />*/}

@@ -1,5 +1,21 @@
+import VoiceInput from './VoiceInput';
 
+const RouteCommands = () => {
+    const commands = [
+        { phrase: "go to login", action: "/login" },
+        { phrase: "go to signup", action: "/signup" },
+        { phrase: "go to dashboard", action: "/dashboard" },
+        { phrase: "go home", action: "/" },
+    ];
 
+    return (
+        <div>
+            <VoiceInput commands={commands} />
+        </div>
+    );
+};
+
+export default RouteCommands;
 
 
 

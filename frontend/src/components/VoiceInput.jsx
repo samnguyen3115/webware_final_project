@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+// import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 
 const VoiceInput = ({ commands = [] }) => {
-    const [listening, isListening] = useState(false);
-    const [transcript, isTranscribing] = useState("");
+    const [listening, setListening] = useState(false);
+    const [transcript, setTranscript] = useState("");
     const [finalTranscript, setFinalTranscript] = useState("");
     const recognitionRef = useRef(null);
     const listeningRef = useRef(null);
@@ -26,7 +27,7 @@ const VoiceInput = ({ commands = [] }) => {
 
         // Called when recognition starts successfully
         recognition.onstart = () => {
-            isListening(true);
+            setListening(true);
         };
 
         // Called when speech is recognized
@@ -35,7 +36,7 @@ const VoiceInput = ({ commands = [] }) => {
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 liveTranscript += event.results[i][0].transcript;
             }
-            isTranscribing(liveTranscript);
+            setTranscript(liveTranscript);
 
             if (event.results[0].isFinal) {
                 setFinalTranscript(liveTranscript);
@@ -58,7 +59,7 @@ const VoiceInput = ({ commands = [] }) => {
             if (listeningRef.current) {
                 recognition.start(); // auto-restart
             } else {
-                isListening(false);
+                setListening(false);
             }
         };
 
@@ -74,14 +75,14 @@ const VoiceInput = ({ commands = [] }) => {
         } else {
             listeningRef.current = false;
             recognitionRef.current.stop();
-            isListening(false);
+            setListening(false);
         }
     };
 
     return (
         <div className="voice-input p-4 border rounded-md bg-gray-50">
             <p className="mb-1 text-gray-500 text-sm">
-                Interim: <span className="text-gray-800">{transcript}</span>
+                Transcript: <span className="text-gray-800">{transcript}</span>
             </p>
             <p className="mb-2 text-gray-700">
                 Final: <span className="font-semibold">{finalTranscript}</span>

@@ -58,7 +58,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-white text-black">
       <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} />
-      <VoiceInput></VoiceInput>
 
       <main className="mx-auto px-4 py-6">
         <DashboardControls
