@@ -15,8 +15,13 @@ export function useDashboardData({ schoolId }) {
     useEffect(() => {
         let alive = true;
 
-        async function fetchDataArray(url, datasetName, headers) {
-            const response = await fetch(url, { headers });
+        async function fetchDataArray(url, datasetName) {
+            const response = await fetch(url, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
 
             if (response.status === 401) {
                 throw new Error("Session expired. Please log in again.");
@@ -48,21 +53,10 @@ export function useDashboardData({ schoolId }) {
             setErr("");
 
             try {
-                // Get JWT token from localStorage
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error("No authentication token found");
-                }
-
-                const headers = {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                };
-
                 // Fetch data from API - middleware ensures user only gets their school's data
-                const a = await fetchDataArray("http://localhost:5000/api/admission/activity", "Activity", headers);
-                const e = await fetchDataArray("http://localhost:5000/api/admission/enrollment", "Enrollment", headers);
-                const s = await fetchDataArray("http://localhost:5000/api/admission/activity-soc", "SOC", headers);
+                const a = await fetchDataArray("/api/admission/activity", "Activity");
+                const e = await fetchDataArray("/api/admission/enrollment", "Enrollment");
+                const s = await fetchDataArray("/api/admission/activity-soc", "SOC");
 
                 if (!alive) return undefined;
 

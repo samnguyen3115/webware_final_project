@@ -28,9 +28,9 @@ const Signup = () => {
         SCHOOL_ID: Number(formData.SCHOOL_ID)  // Convert to number
       };
       
-      const response = await axios.post('/api/auth/signup', signupData);
+      const response = await axios.post('/api/auth/signup', signupData, { withCredentials: true });
       
-      login(response.data.token, response.data.user);
+      login(response.data.user);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed');

@@ -23,8 +23,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/auth/login', formData);
-      login(response.data.token, response.data.user);
+      const response = await axios.post('/api/auth/login', formData, { withCredentials: true });
+      login(response.data.user);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
