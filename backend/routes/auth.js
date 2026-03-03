@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const School = require('../models/School');
 
 const COOKIE_NAME = 'token';
 
@@ -107,6 +108,15 @@ router.get('/me', async (req, res) => {
     });
   } catch (err) {
     return res.status(401).json({ message: 'Not authenticated' });
+  }
+});
+
+router.get('/schools', async (req, res) => {
+  try {
+    const schools = await School.find({}, { ID: 1, NAME_TX: 1 }).sort({ ID: 1 });
+    res.json(schools);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch schools' });
   }
 });
 
