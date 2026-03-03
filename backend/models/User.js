@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "school"],
     required: true
   },
+  schoolId: {
+    type: Number,
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

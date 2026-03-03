@@ -8,6 +8,27 @@ import Dashboard from './pages/Dashboard';
 import BenchmarkForm from './components/BenchmarkForm.jsx';  //i added
 import './App.css';
 
+function RoleBasedHomeRedirect() {
+  const { isAuthenticated, loading, user } = React.useContext(AuthContext);
+
+  if (loading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role === 'admin') {
+    return <Navigate to="/benchmark" replace />;
+  }
+
+  if (user?.role === 'school') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Navigate to="/login" replace />;
+}
 
 function App() {
   return (
@@ -20,22 +41,22 @@ function App() {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['admin', 'school']}>
                   <Dashboard />
                 </ProtectedRoute>
               }
             />
             <Route
-            path="/benchmark"
-            element={
-              <ProtectedRoute allowedRole="admin">
-              <BenchmarkForm />
-              </ProtectedRoute>
-            }
+              path="/benchmark"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <BenchmarkForm />
+                </ProtectedRoute>
+              }
             />
-            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/" element={<RoleBasedHomeRedirect />} />
           </Routes>
-        </div>  
+        </div>
       </Router>
     </AuthProvider>
   );

@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import axios from "axios";
+import DashboardHeader from "./dashboard/DashboardHeader";
+import { AuthContext } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 
 const BenchmarkForm = () => {
+  const { logout, user } = useContext(AuthContext) || {};
+  const schoolId = user?.schoolId ?? "N/A";
 
   /* stores user input */
   const [formData, setFormData] = useState({
@@ -108,12 +113,24 @@ const BenchmarkForm = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 bg-white border p-8 rounded shadow">
-      <h2 className="text-2xl font-semibold mb-6">
-        {formData.year} Benchmark Form
-      </h2>
+    <div className="min-h-screen bg-white text-black">
+      <DashboardHeader schoolId={schoolId} onLogout={logout} />
 
-      <form onSubmit={submit} className="space-y-6">
+      <main className="mx-auto px-4 py-6">
+        <div className="max-w-3xl mx-auto mb-3">
+          <Link
+            to="/dashboard"
+            className="inline-block rounded-lg border border-gray-400 bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-100"
+          >
+            Back to Dashboard
+          </Link>
+        </div>
+        <div className="max-w-3xl mx-auto mt-4 bg-white border p-8 rounded shadow">
+          <h2 className="text-2xl font-semibold mb-6">
+            {formData.year} Benchmark Form
+          </h2>
+
+          <form onSubmit={submit} className="space-y-6">
     <div>
         <h3 className="font-semibold mb-2">Year</h3>
         <input
@@ -244,7 +261,9 @@ const BenchmarkForm = () => {
           Save and Submit
         </button>
 
-      </form>
+          </form>
+        </div>
+      </main>
     </div>
   );
 };

@@ -20,10 +20,16 @@ function getTokenFromRequest(req) {
 
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, password, role, SCHOOL_ID } = req.body;
+    const { name, email, password, role = 'school', schoolId } = req.body;
+    const normalizedRole = role === 'admin' ? 'admin' : 'school';
+    const normalizedSchoolId = normalizedRole === 'admin' ? 1 : Number(schoolId);
 
-    if (!name || !email || !password || !SCHOOL_ID) {
-      return res.status(400).json({ message: 'All fields (name, email, password, SCHOOL_ID) are required' });
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'All fields (name, email, password) are required' });
+    }
+
+    if (normalizedRole === 'school' && !Number.isFinite(normalizedSchoolId)) {
+      return res.status(400).json({ message: 'schoolId is required for teacher/student accounts' });
     }
 
     const existingUser = await User.findOne({ email });
@@ -31,10 +37,10 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const user = new User({ name, email, password, role, SCHOOL_ID: Number(SCHOOL_ID) });
+    const user = new User({ name, email, password, role: normalizedRole, schoolId: normalizedSchoolId });
     await user.save();
 
-    const token = jwt.sign({ userId: user._id, SCHOOL_ID: user.SCHOOL_ID }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ userId: user._id, role: user.role, schoolId: user.schoolId }, process.env.JWT_SECRET, {
       expiresIn: '7d'
     });
 
@@ -42,7 +48,7 @@ router.post('/signup', async (req, res) => {
 
     res.status(201).json({
       message: 'User registered successfully',
-      user: { id: user._id, name: user.name, email: user.email, role: user.role, SCHOOL_ID: user.SCHOOL_ID }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, schoolId: user.schoolId }
     });
   } catch (err) {
     res.status(500).json({ message: 'Error registering user', error: err.message });
@@ -67,7 +73,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    const token = jwt.sign({ userId: user._id, role: user.role, SCHOOL_ID: user.SCHOOL_ID }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ userId: user._id, role: user.role, schoolId: user.schoolId }, process.env.JWT_SECRET, {
       expiresIn: '7d'
     });
 
@@ -75,7 +81,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      user: { id: user._id, name: user.name, email: user.email, role: user.role, SCHOOL_ID: user.SCHOOL_ID }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, schoolId: user.schoolId }
     });
   } catch (err) {
     res.status(500).json({ message: 'Error logging in', error: err.message });
@@ -90,14 +96,14 @@ router.get('/me', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('_id name email SCHOOL_ID');
+    const user = await User.findById(decoded.userId).select('_id name email role schoolId');
 
     if (!user) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
     return res.json({
-      user: { id: user._id, name: user.name, email: user.email, SCHOOL_ID: user.SCHOOL_ID }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, schoolId: user.schoolId }
     });
   } catch (err) {
     return res.status(401).json({ message: 'Not authenticated' });

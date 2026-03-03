@@ -11,6 +11,7 @@ export default function DashboardControls({
     err,
     activityRowsCount,
     enrollmentRowsCount,
+    canOpenBenchmark,
 }) {
     return (
         <div className="mb-6 grid gap-3 md:grid-cols-3">
@@ -59,15 +60,16 @@ export default function DashboardControls({
                     </div>
                 ) : null}
             </div>
-            {/*Benchmark Form */}
-             <div className="rounded-xl border border-gray-400 bg-white p-4 flex items-center justify-center">
-                <Link
-                    to="/benchmark"
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-                >
-                    Open Benchmark Form
-                </Link>
-        </div>
+            {canOpenBenchmark ? (
+                <div className="rounded-xl border border-gray-400 bg-white p-4 flex items-center justify-center">
+                    <Link
+                        to="/benchmark"
+                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                    >
+                        Open Benchmark Form
+                    </Link>
+                </div>
+            ) : null}
         </div>
     );
 }

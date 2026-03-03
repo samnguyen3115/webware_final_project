@@ -14,7 +14,7 @@ const schoolAuthMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.userId;
-    req.userSchoolId = decoded.SCHOOL_ID;
+    req.userSchoolId = decoded.schoolId ?? decoded.SCHOOL_ID;
     next();
   } catch (err) {
     console.error(`❌ [Auth] Token verification failed:`, err.message);

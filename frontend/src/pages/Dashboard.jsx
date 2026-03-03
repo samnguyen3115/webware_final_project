@@ -37,7 +37,8 @@ ChartJS.register(
 
 export default function Dashboard() {
   const { logout, user } = useContext(AuthContext) || {};
-  const schoolId = user?.SCHOOL_ID ?? 1;
+  const schoolId = user?.schoolId ?? 1;
+  const canOpenBenchmark = user?.role === "admin";
 
   const {
     category,
@@ -70,6 +71,7 @@ export default function Dashboard() {
           err={err}
           activityRowsCount={activityRows.length}
           enrollmentRowsCount={enrollmentRows.length}
+          canOpenBenchmark={canOpenBenchmark}
         />
         
 

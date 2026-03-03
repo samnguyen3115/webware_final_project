@@ -4,17 +4,28 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
 const Signup = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'school', SCHOOL_ID: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'school', schoolId: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
   const handleChange = (e) => {
-    setFormData({
+    const { name, value } = e.target;
+    const next = {
       ...formData,
-      [e.target.name]: e.target.value
-    });
+      [name]: value
+    };
+
+    if (name === 'role' && value === 'admin') {
+      next.schoolId = '1';
+    }
+
+    if (name === 'role' && value === 'school' && formData.schoolId === '1') {
+      next.schoolId = '';
+    }
+
+    setFormData(next);
   };
 
   const handleSubmit = async (e) => {
@@ -25,7 +36,7 @@ const Signup = () => {
     try {
       const signupData = {
         ...formData,
-        SCHOOL_ID: Number(formData.SCHOOL_ID)  // Convert to number
+        schoolId: formData.role === 'admin' ? 1 : Number(formData.schoolId)
       };
 
       const response = await axios.post('/api/auth/signup', signupData, { withCredentials: true });
@@ -84,12 +95,13 @@ const Signup = () => {
           />
           <input
             type="number"
-            name="SCHOOL_ID"
+            name="schoolId"
             placeholder="School ID (numeric)"
-            value={formData.SCHOOL_ID}
+            value={formData.schoolId}
             onChange={handleChange}
             className="rounded-md border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
-            required
+            required={formData.role !== 'admin'}
+            disabled={formData.role === 'admin'}
           />
           <select
             name="role"
@@ -98,7 +110,7 @@ const Signup = () => {
             className="rounded-mb border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
             required
           >
-            <option value="school">School User</option>
+            <option value="school">Teacher/Student</option>
             <option value="admin">Admin</option>
           </select>
           <button
