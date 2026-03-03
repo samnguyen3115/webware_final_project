@@ -95,7 +95,7 @@ const BenchmarkForm = () => {
       try {
         setIsSubmitting(true); 
         await axios.post(
-          "http://localhost:5000/api/benchmark",
+          "/api/benchmark",
           formData
         );
 

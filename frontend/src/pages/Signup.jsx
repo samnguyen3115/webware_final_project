@@ -25,8 +25,8 @@ const Signup = () => {
     try {
       const response = await axios.post('/api/auth/signup', formData);
       login(response.data.token, response.data.user);
-      
-      if (response.data.user.role  === "admin"){
+
+      if (response.data.user.role === "admin") {
         navigate('/benchmark');
       } else {
         navigate('/dashboard');

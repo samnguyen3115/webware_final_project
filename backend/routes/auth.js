@@ -23,7 +23,7 @@ router.post('/signup', async (req, res) => {
       expiresIn: '7d'
     });
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'User registered successfully',
       token,
       user: { id: user._id, name: user.name, email: user.email, role: user.role }
@@ -55,10 +55,10 @@ router.post('/login', async (req, res) => {
       expiresIn: '7d'
     });
 
-    res.json({ 
+    res.json({
       message: 'Login successful',
       token,
-      user: { id: user._id, name: user.name, email: user.email, role:user.role }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (err) {
     res.status(500).json({ message: 'Error logging in', error: err.message });

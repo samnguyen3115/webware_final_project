@@ -9,12 +9,12 @@ const ProtectedRoute = ({ children, allowedRole }) => {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
   }
 
-  if (!token){
+  if (!token) {
     return <Navigate to="/login" />;
   }
 
   if (allowedRole && user?.role !== allowedRole) {
-    if (user?.role === "admin"){
+    if (user?.role === "admin") {
       return <Navigate to="/benchmark" />;
     } else {
       return <Navigate to="/dashboard" />;
