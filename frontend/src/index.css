@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+
+#transcript{
+    margin-bottom: 1rem;
+    font-size : 1.5rem;
+}
+
+button {
+    background-color: lightskyblue;
+    color: black;
+    border-radius: 15px;
+    border: none;
+}
+
+button:hover {
+    background-color: lightblue;
+    cursor: pointer;
+}
