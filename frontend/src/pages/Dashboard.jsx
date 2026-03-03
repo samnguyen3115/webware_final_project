@@ -21,6 +21,7 @@ import DashboardControls from "../components/dashboard/DashboardControls";
 import KpiCards from "../components/dashboard/KpiCards";
 import ChartsSection from "../components/dashboard/ChartsSection";
 import { useDashboardData } from "../hooks/useDashboardData";
+import VoiceInput from "../components/VoiceInput.jsx";
 
 ChartJS.register(
   CategoryScale,
@@ -57,6 +58,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-white text-black">
       <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} />
+      <VoiceInput></VoiceInput>
 
       <main className="mx-auto px-4 py-6">
         <DashboardControls
