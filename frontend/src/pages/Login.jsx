@@ -26,7 +26,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/auth/login', formData);
+      const response = await axios.post('/api/auth/login', formData, { withCredentials: true });
       const userRole = response.data.user.role;
 
       if (userRole !== loginType) {
@@ -35,7 +35,7 @@ const Login = () => {
         return;
       }
 
-      login(response.data.token, response.data.user);
+      login(response.data.user);
 
       if (userRole === "admin") {
         navigate('/benchmark');

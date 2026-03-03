@@ -4,7 +4,7 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
 const Signup = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'school' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'school', SCHOOL_ID: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -23,8 +23,14 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/auth/signup', formData);
-      login(response.data.token, response.data.user);
+      const signupData = {
+        ...formData,
+        SCHOOL_ID: Number(formData.SCHOOL_ID)  // Convert to number
+      };
+
+      const response = await axios.post('/api/auth/signup', signupData, { withCredentials: true });
+
+      login(response.data.user);
 
       if (response.data.user.role === "admin") {
         navigate('/benchmark');
@@ -72,6 +78,15 @@ const Signup = () => {
             name="password"
             placeholder="Password"
             value={formData.password}
+            onChange={handleChange}
+            className="rounded-md border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
+            required
+          />
+          <input
+            type="number"
+            name="SCHOOL_ID"
+            placeholder="School ID (numeric)"
+            value={formData.SCHOOL_ID}
             onChange={handleChange}
             className="rounded-md border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
             required

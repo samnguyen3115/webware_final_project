@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { parseCsv } from "../utils/csv";
 import { formatNum, formatPct, safeDiv, sumField } from "../utils/format";
 import { getKpiCardTone } from "../utils/kpi";
 
@@ -10,41 +9,79 @@ export function useDashboardData({ schoolId }) {
 
     const [activityRows, setActivityRows] = useState([]);
     const [enrollmentRows, setEnrollmentRows] = useState([]);
+    const [socRows, setSOCRows] = useState([]);
     const [schoolYearId, setSchoolYearId] = useState(null);
 
     useEffect(() => {
         let alive = true;
+
+        async function fetchDataArray(url, datasetName) {
+            const response = await fetch(url, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.status === 401) {
+                throw new Error("Session expired. Please log in again.");
+            }
+
+            if (response.status === 204) {
+                return [];
+            }
+
+            if (!response.ok) {
+                throw new Error(`${datasetName} fetch failed: ${response.status}`);
+            }
+
+            const raw = await response.text();
+            if (!raw) {
+                return [];
+            }
+
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                throw new Error(`${datasetName} returned invalid JSON`);
+            }
+        }
 
         async function load() {
             setLoading(true);
             setErr("");
 
             try {
-                const [activityText, enrollmentText] = await Promise.all([
-                    fetch("/data/ADMISSION_ACTIVITY.csv").then((r) => {
-                        if (!r.ok) throw new Error("Could not load ADMISSION_ACTIVITY.csv");
-                        return r.text();
-                    }),
-                    fetch("/data/ADMISSION_ACTIVITY_ENROLLMENT.csv").then((r) => {
-                        if (!r.ok) throw new Error("Could not load ADMISSION_ACTIVITY_ENROLLMENT.csv");
-                        return r.text();
-                    }),
-                ]);
-
-                const a = parseCsv(activityText);
-                const e = parseCsv(enrollmentText);
+                // Fetch data from API - middleware ensures user only gets their school's data
+                const a = await fetchDataArray("/api/admission/activity", "Activity");
+                const e = await fetchDataArray("/api/admission/enrollment", "Enrollment");
+                const s = await fetchDataArray("/api/admission/activity-soc", "SOC");
 
                 if (!alive) return undefined;
 
-                setActivityRows(a);
-                setEnrollmentRows(e);
+                // Convert MongoDB documents to match expected format
+                const activityData = Array.isArray(a) ? a : [];
+                const enrollmentData = Array.isArray(e) ? e : [];
+                const socData = Array.isArray(s) ? s : [];
 
-                const years = Array.from(
-                    new Set(a.filter((r) => r.SCHOOL_ID === schoolId).map((r) => r.SCHOOL_YR_ID))
-                )
-                    .filter((v) => Number.isFinite(v))
-                    .sort((x, y) => x - y);
+                setActivityRows(activityData);
+                setEnrollmentRows(enrollmentData);
+                setSOCRows(socData);
 
+                // Get available school years from ALL collections
+                const allYears = new Set();
+                activityData.forEach(r => {
+                    if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
+                });
+                enrollmentData.forEach(r => {
+                    if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
+                });
+                socData.forEach(r => {
+                    if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
+                });
+                
+                const years = Array.from(allYears).sort((x, y) => x - y);
                 setSchoolYearId((prev) => prev ?? years[years.length - 1] ?? null);
             } catch (e2) {
                 if (alive) {
@@ -64,61 +101,78 @@ export function useDashboardData({ schoolId }) {
     }, [schoolId]);
 
     const availableYears = useMemo(() => {
-        const years = Array.from(
-            new Set(activityRows.filter((r) => r.SCHOOL_ID === schoolId).map((r) => r.SCHOOL_YR_ID))
-        )
-            .filter((v) => Number.isFinite(v))
-            .sort((a, b) => a - b);
-        return years;
-    }, [activityRows, schoolId]);
+        const allYears = new Set();
+        activityRows.forEach(r => {
+            if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
+        });
+        enrollmentRows.forEach(r => {
+            if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
+        });
+        socRows.forEach(r => {
+            if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
+        });
+        return Array.from(allYears).sort((a, b) => a - b);
+    }, [activityRows, enrollmentRows, socRows]);
 
     const activityFiltered = useMemo(() => {
         if (!Number.isFinite(schoolYearId)) return [];
-        return activityRows.filter((r) => r.SCHOOL_ID === schoolId && r.SCHOOL_YR_ID === schoolYearId);
-    }, [activityRows, schoolId, schoolYearId]);
+        return activityRows.filter((r) => r.SCHOOL_YR_ID === schoolYearId);
+    }, [activityRows, schoolYearId]);
 
     const enrollmentFiltered = useMemo(() => {
         if (!Number.isFinite(schoolYearId)) return [];
-        return enrollmentRows.filter(
-            (r) => r.SCHOOL_ID === schoolId && r.SCHOOL_YR_ID === schoolYearId
-        );
-    }, [enrollmentRows, schoolId, schoolYearId]);
+        return enrollmentRows.filter((r) => r.SCHOOL_YR_ID === schoolYearId);
+    }, [enrollmentRows, schoolYearId]);
 
     const admissionsAgg = useMemo(() => {
-        const inquiriesTotal =
-            sumField(activityFiltered, "INQUIRIES_BOYS") + sumField(activityFiltered, "INQUIRIES_GIRLS");
-        const appsTotal = sumField(activityFiltered, "COMPLETED_APPLICATION_TOTAL");
-        const acceptTotal = sumField(activityFiltered, "ACCEPTANCES_TOTAL");
-        const enrollTotal = sumField(activityFiltered, "NEW_ENROLLMENTS_TOTAL");
+        // Calculate KPIs using available data
+        // Note: CSV data doesn't include acceptances or completed enrollment breakdowns
+        // Available: INQUIRIES (applications), CONTRACTED_ENROLL (actual enrollments), CAPACITY_ENROLL
+        
+        // Get applications from enrollment data (INQUIRIES)
+        const enrollmentByType = new Map();
+        for (const r of enrollmentFiltered) {
+            const type = r.ENROLLMENT_TYPE_CD ?? "UNKNOWN";
+            const enrolled = Number.isFinite(r.NR_ENROLLED) ? r.NR_ENROLLED : 0;
+            enrollmentByType.set(type, (enrollmentByType.get(type) ?? 0) + enrolled);
+        }
+        
+        const appsTotal = enrollmentByType.get("INQUIRIES") ?? 0;
+        
+        // Get actual enrollments from activity data (contracted enrollments)
+        const enrollBoys = sumField(activityFiltered, "CONTRACTED_ENROLL_BOYS");
+        const enrollGirls = sumField(activityFiltered, "CONTRACTED_ENROLL_GIRLS");
+        const enrollTotal = enrollBoys + enrollGirls;
+        
+        // Admission rate: Contracted Enrollments / Applications
+        // (using contracted enrollments as acceptances since actual acceptance data not available)
+        const admitRate = appsTotal > 0 ? safeDiv(enrollTotal, appsTotal) : undefined;
+        
+        // Yield rate: Enrollments / Applications (percentage of applicants who enrolled)
+        const yieldRate = appsTotal > 0 ? safeDiv(enrollTotal, appsTotal) : undefined;
 
-        const admitRate = safeDiv(acceptTotal, appsTotal);
-        const yieldRate = safeDiv(enrollTotal, acceptTotal);
-        const inquiryToApp = safeDiv(appsTotal, inquiriesTotal);
-
-        const enrollBoys = sumField(activityFiltered, "NEW_ENROLLMENTS_BOYS");
-        const enrollGirls = sumField(activityFiltered, "NEW_ENROLLMENTS_GIRLS");
+        // Capacity fill: Enrollments / Capacity
         const cap = sumField(activityFiltered, "CAPACITY_ENROLL");
-        const fillRate = safeDiv(enrollTotal, cap);
+        const fillRate = cap > 0 ? safeDiv(enrollTotal, cap) : undefined;
 
         return {
-            inquiriesTotal,
+            inquiriesTotal: appsTotal,
             appsTotal,
-            acceptTotal,
+            acceptTotal: enrollTotal, // Using enrollments as proxy
             enrollTotal,
             admitRate,
             yieldRate,
-            inquiryToApp,
+            inquiryToApp: 0,
             enrollBoys,
             enrollGirls,
             cap,
             fillRate,
         };
-    }, [activityFiltered]);
+    }, [enrollmentFiltered, activityFiltered]);
 
     const pipelineLineData = useMemo(() => {
-        const labels = ["Inquiries", "Applications", "Acceptances", "New Enrollments"];
+        const labels = ["Applications", "Acceptances", "New Enrollments"];
         const data = [
-            admissionsAgg.inquiriesTotal,
             admissionsAgg.appsTotal,
             admissionsAgg.acceptTotal,
             admissionsAgg.enrollTotal,
@@ -183,31 +237,25 @@ export function useDashboardData({ schoolId }) {
                 label: "Admission rate",
                 valueText: formatPct(admissionsAgg.admitRate),
                 tone: getKpiCardTone(admissionsAgg.admitRate, "rate"),
-                sub: "Acceptances / Applications",
+                sub: "Contracted Enrollments / Applications",
             },
             {
                 label: "Yield rate",
                 valueText: formatPct(admissionsAgg.yieldRate),
                 tone: getKpiCardTone(admissionsAgg.yieldRate, "rate"),
-                sub: "New enrollments / Acceptances",
-            },
-            {
-                label: "Inquiry to Application",
-                valueText: formatPct(admissionsAgg.inquiryToApp),
-                tone: getKpiCardTone(admissionsAgg.inquiryToApp, "rate"),
-                sub: "Applications / Inquiries",
+                sub: "Enrollments / Applications",
             },
             {
                 label: "New enrollments",
                 valueText: formatNum(admissionsAgg.enrollTotal),
                 tone: "border-gray-400/50",
-                sub: "Total for selected year",
+                sub: "Contracted enrollments total",
             },
             {
                 label: "Capacity fill",
                 valueText: formatPct(admissionsAgg.fillRate),
                 tone: getKpiCardTone(admissionsAgg.fillRate, "rate"),
-                sub: "New enrollments / Capacity",
+                sub: "Enrollments / Capacity",
             },
         ];
     }, [admissionsAgg]);
@@ -220,6 +268,7 @@ export function useDashboardData({ schoolId }) {
         err,
         activityRows,
         enrollmentRows,
+        socRows,
         schoolYearId,
         setSchoolYearId,
 

@@ -1,17 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
+const { schoolAuthMiddleware } = require('../middleware/schoolAuth');
 const User = require('../models/User');
 
-router.get('/data', authMiddleware, async (req, res) => {
+router.get('/data', schoolAuthMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password');
     
     res.json({
       message: 'Welcome to dashboard',
-      user,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        schoolId: user.schoolId
+      },
       stats: {
-        totalUsers: await User.countDocuments(),
         joinDate: user.createdAt
       }
     });
