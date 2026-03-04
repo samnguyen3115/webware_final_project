@@ -11,6 +11,7 @@ import './App.css';
 import "regenerator-runtime/runtime";
 import RouteCommands from "./components/RouteCommands.jsx";
 import VoiceInput from "./components/VoiceInput.jsx";
+import VoiceButton from './components/VoiceButton.jsx';
 
 // function VoiceRouter() {
 //     const navigate = useNavigate();
@@ -60,21 +61,23 @@ function RoleBasedHomeRedirect() {
 
 function App() {
 
-    //const [redirectURL, setRedirectURL] = useState("");
-    // const commands = [
-    //     { phrase: "go to dashboard", action: "/dashboard" },
-    //     { phrase: "go to login", action: "/login" },
-    //     { phrase: "go to signup", action: "/signup" },
-    //     { phrase: "logout", action: () => console.log("Logging out...") }
-    // ];
+  //const [redirectURL, setRedirectURL] = useState("");
+  const commands = [
+    { phrase: "go to dashboard", action: "/dashboard" },
+    { phrase: "go to login", action: "/login" },
+    { phrase: "go to sign up", action: "/signup" },
+    { phrase: ["log out", "logout"], action: () => console.log("Logging out...") }
+  ];
 
   return (
     <AuthProvider>
       <Router>
-          <RouteCommands />
-          {/*<VoiceRouter />*/}
+        {/* <RouteCommands /> */}
+
+        {/*<VoiceRouter />*/}
+        <VoiceButton commands={commands} />
         <div className="app-container">
-            {/*<VoiceInput commands ={commands} />*/}
+          {/*<VoiceInput commands ={commands} />*/}
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
