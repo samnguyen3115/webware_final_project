@@ -38,6 +38,7 @@ ChartJS.register(
 export default function Dashboard() {
   const { logout, user } = useContext(AuthContext) || {};
   const schoolId = user?.schoolId ?? 1;
+  const isAdmin = user?.role === "admin";
 
   const {
     category,
@@ -59,7 +60,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-white text-black">
-      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} isAdmin={canOpenBenchmark} userRole={user?.role} />
+      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} isAdmin={isAdmin} userRole={user?.role} />
 
       <main className="mx-auto px-20 py-6">
         <DashboardControls
