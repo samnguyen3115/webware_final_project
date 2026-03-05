@@ -49,7 +49,7 @@ export default function PeerComparison() {
 
   return (
     <div className="min-h-screen bg-white text-black">
-      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} userRole={user?.role} />
+      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} isAdmin={user?.role === "admin"} userRole={user?.role} />
 
       <main className="mx-auto px-4 py-6">
         <section className="mb-6 grid gap-3 md:grid-cols-3">
