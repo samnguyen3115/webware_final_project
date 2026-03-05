@@ -2,16 +2,25 @@ const mongoose = require('mongoose');
 
 const benchmarkSchema = new mongoose.Schema(
     {
-        year: { type: Number, required: true },
-        applicants: { type: Number, required: true },
-        enrolled: { type: Number, required: true },
-        internationalPerc: { type: Number, default: null },
-        teacherStudentRatio: { type: Number, default: null },
-        avgGPA: { type: Number, default: null },
-        aveTestScore: { type: Number, default: null },
-        percentAthlete: { type: Number, default: null },
-        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        schoolId: { type: Number, default: null },
+        SCHOOL_ID: { type: Number, required: true },
+
+        SCHOOL_YR_ID: { type: Number, required: true },
+
+        CAPACITY_ENROLL: { type: Number, default: null },
+
+        CONTRACTED_ENROLL_BOYS: { type: Number, default: null },
+
+        CONTRACTED_ENROLL_GIRLS: { type: Number, default: null },
+
+        GRADE_DEF_ID: { type: Number, required: true },
+
+        CONTRACTED_ENROLL_NB: { type: Number, default: null },
+
+        COMPLETED_APPLICATION_TOTAL: { type: Number, default: 0 },
+
+        ACCEPTANCES_TOTAL: { type: Number, default: 0 },
+
+        NEW_ENROLLMENTS_TOTAL: { type: Number, default: 0 }
     },
     { timestamps: true }
 );

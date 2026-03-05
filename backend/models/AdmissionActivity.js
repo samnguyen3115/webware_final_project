@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 
 const admissionActivitySchema = new mongoose.Schema({
   ID: {
-    type: String,
-    required: true,
+    type: Number,
     unique: true
   },
   SCHOOL_ID: {
