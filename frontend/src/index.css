@@ -6,6 +6,17 @@
     font-size : 1.5rem;
 }
 
+@theme {
+    --background-beige-white: #F8F8F6;
+    --font-header-color-white: #FFFFFF;
+    --font-subheader-color-gray: #D6D6D6;
+    --button-bg-color-black: #1E1E1E;
+    --card-background-color-dark-blue: #19254A;
+    --card-background-color-light-blue: #49B1F2;
+    --irrelevant-bg-color-orange: #F2A03D;
+
+}
+
 /*button {*/
 /*    background-color: lightskyblue;*/
 /*    color: black;*/
