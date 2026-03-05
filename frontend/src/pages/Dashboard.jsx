@@ -59,9 +59,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-white text-black">
-      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} userRole={user?.role} />
+      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} isAdmin={canOpenBenchmark} userRole={user?.role} />
 
-      <main className="mx-auto px-4 py-6">
+      <main className="mx-auto px-20 py-6">
         <DashboardControls
           category={category}
           setCategory={setCategory}
@@ -73,9 +73,9 @@ export default function Dashboard() {
           activityRowsCount={activityRows.length}
           enrollmentRowsCount={enrollmentRows.length}
         />
-        
 
-       
+
+
 
         <KpiCards kpis={kpis} />
 

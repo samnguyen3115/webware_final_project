@@ -237,7 +237,8 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
               <div>
                 <h3 className="font-semibold mb-2">Required IDs</h3>
 
-                <input
+                <a className="font-light italic">School ID</a>
+              <input
                   type="number"
                   name="SCHOOL_ID"
                   value={formData.SCHOOL_ID}
@@ -247,7 +248,8 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
                 />
                 {errors.SCHOOL_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_ID}</p>}
 
-                <input
+                <a className="font-light italic">School Year ID</a>
+              <input
                   type="number"
                   name="SCHOOL_YR_ID"
                   value={formData.SCHOOL_YR_ID}
@@ -257,7 +259,8 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
                 />
                 {errors.SCHOOL_YR_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_YR_ID}</p>}
 
-                <input
+                <a className="font-light italic">Grade Definition ID</a>
+              <input
                   type="number"
                   name="GRADE_DEF_ID"
                   value={formData.GRADE_DEF_ID}
@@ -271,7 +274,8 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
               <div>
                 <h3 className="font-semibold mb-2">Capacity & Contracted Enrollment</h3>
 
-                <input
+                <a className="font-light italic">Capacity Enrollment</a>
+              <input
                   type="number"
                   name="CAPACITY_ENROLL"
                   value={formData.CAPACITY_ENROLL}
@@ -281,7 +285,8 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
                 />
                 {errors.CAPACITY_ENROLL && <p className="text-red-600 text-sm">{errors.CAPACITY_ENROLL}</p>}
 
-                <input
+                <a className="font-light italic">Contracted Enrollment (Boys)</a>
+              <input
                   type="number"
                   name="CONTRACTED_ENROLL_BOYS"
                   value={formData.CONTRACTED_ENROLL_BOYS}
@@ -291,7 +296,8 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
                 />
                 {errors.CONTRACTED_ENROLL_BOYS && <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_BOYS}</p>}
 
-                <input
+                <a className="font-light italic">Contracted Enrollment (Girls)</a>
+              <input
                   type="number"
                   name="CONTRACTED_ENROLL_GIRLS"
                   value={formData.CONTRACTED_ENROLL_GIRLS}
@@ -301,7 +307,8 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
                 />
                 {errors.CONTRACTED_ENROLL_GIRLS && <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_GIRLS}</p>}
 
-                <input
+                <a className="font-light italic">Contracted Enrollment (Non-Binary)</a>
+              <input
                   type="number"
                   name="CONTRACTED_ENROLL_NB"
                   value={formData.CONTRACTED_ENROLL_NB}
@@ -317,7 +324,8 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
               <div>
                 <h3 className="font-semibold mb-2">Application Outcomes</h3>
 
-                <input
+                <a className="font-light italic">Completed Applications Total</a>
+              <input
                   type="number"
                   name="COMPLETED_APPLICATION_TOTAL"
                   value={formData.COMPLETED_APPLICATION_TOTAL}
@@ -327,23 +335,25 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
                 />
                 {errors.COMPLETED_APPLICATION_TOTAL && <p className="text-red-600 text-sm">{errors.COMPLETED_APPLICATION_TOTAL}</p>}
 
-                <input
+                <a className="font-light italic">Acceptances Total</a>
+              <input
                   type="number"
                   name="ACCEPTANCES_TOTAL"
                   value={formData.ACCEPTANCES_TOTAL}
                   placeholder="Acceptances Total"
                   onChange={change}
-                  className="w-full border p-2 rounded mt-2"
+                  className="w-full border p-2 rounded mb-2"
                 />
                 {errors.ACCEPTANCES_TOTAL && <p className="text-red-600 text-sm">{errors.ACCEPTANCES_TOTAL}</p>}
 
-                <input
+                <a className="font-light italic">New Enrollments Total</a>
+              <input
                   type="number"
                   name="NEW_ENROLLMENTS_TOTAL"
                   value={formData.NEW_ENROLLMENTS_TOTAL}
                   placeholder="New Enrollments Total"
                   onChange={change}
-                  className="w-full border p-2 rounded mt-2"
+                  className="w-full border p-2 rounded mb-2"
                 />
                 {errors.NEW_ENROLLMENTS_TOTAL && (
                   <p className="text-red-600 text-sm">{errors.NEW_ENROLLMENTS_TOTAL}</p>
