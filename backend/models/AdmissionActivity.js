@@ -1,72 +1,50 @@
 const mongoose = require('mongoose');
 
 const admissionActivitySchema = new mongoose.Schema({
-  id: {
+  ID: {
     type: String,
     required: true,
     unique: true
   },
-  schoolId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'School'
+  SCHOOL_ID: {
+    type: Number
   },
-  schoolYearId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'SchoolYear'
+  SCHOOL_YR_ID: {
+    type: Number
   },
-  firstName: {
-    type: String,
-    required: true
+  CAPACITY_ENROLL: {
+    type: Number
   },
-  lastName: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true
-  },
-  phoneNumber: {
-    type: String
-  },
-  dateOfBirth: {
-    type: Date
-  },
-  gender: {
-    type: String,
-    enum: ['Male', 'Female', 'Other']
-  },
-  applicationDate: {
-    type: Date,
-    default: Date.now
-  },
-  status: {
-    type: String,
-    enum: ['Applied', 'In Review', 'Accepted', 'Rejected', 'Enrolled'],
-    default: 'Applied'
-  },
-  gpa: {
+  CONTRACTED_ENROLL_BOYS: {
     type: Number,
-    min: 0,
-    max: 4.0
+    default: 0
   },
-  testScore: {
+  CONTRACTED_ENROLL_GIRLS: {
+    type: Number,
+    default: 0
+  },
+  GRADE_DEF_ID: {
     type: Number
   },
-  essays: {
-    type: String
-  },
-  recommendationLetters: {
+  CONTRACTED_ENROLL_NB: {
     type: Number
+  },
+  COMPLETED_APPLICATION_TOTAL: {
+    type: Number,
+    default: 0
+  },
+  ACCEPTANCES_TOTAL: {
+    type: Number,
+    default: 0
+  },
+  NEW_ENROLLMENTS_TOTAL: {
+    type: Number,
+    default: 0
   },
   createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
     type: Date,
     default: Date.now
   }
 });
 
-module.exports = mongoose.model('AdmissionActivity', admissionActivitySchema);
+module.exports = mongoose.model('AdmissionActivity', admissionActivitySchema, 'admissionactivities');

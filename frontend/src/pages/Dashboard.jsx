@@ -1,6 +1,7 @@
 // src/pages/Dashboard.jsx
 import React, { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 import "../App.css";
 
 import {
@@ -21,6 +22,7 @@ import DashboardControls from "../components/dashboard/DashboardControls";
 import KpiCards from "../components/dashboard/KpiCards";
 import ChartsSection from "../components/dashboard/ChartsSection";
 import { useDashboardData } from "../hooks/useDashboardData";
+import VoiceInput from "../components/VoiceInput.jsx";
 
 ChartJS.register(
   CategoryScale,
@@ -37,6 +39,7 @@ ChartJS.register(
 export default function Dashboard() {
   const { logout, user } = useContext(AuthContext) || {};
   const schoolId = user?.schoolId ?? 1;
+  const canOpenBenchmark = user?.role === "admin";
 
   const {
     category,
@@ -69,7 +72,11 @@ export default function Dashboard() {
           err={err}
           activityRowsCount={activityRows.length}
           enrollmentRowsCount={enrollmentRows.length}
+          canOpenBenchmark={canOpenBenchmark}
         />
+        
+
+       
 
         <KpiCards kpis={kpis} />
 

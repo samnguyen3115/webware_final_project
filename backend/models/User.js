@@ -15,15 +15,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  role: {
+    type: String,
+    enum: ["admin", "school"],
+    required: true
+  },
+  schoolId: {
+    type: Number,
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -33,7 +42,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-userSchema.methods.comparePassword = async function(passwordToCheck) {
+userSchema.methods.comparePassword = async function (passwordToCheck) {
   return await bcrypt.compare(passwordToCheck, this.password);
 };
 
