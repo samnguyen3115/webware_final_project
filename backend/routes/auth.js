@@ -113,7 +113,7 @@ router.get('/me', async (req, res) => {
 
 router.get('/schools', async (req, res) => {
   try {
-    const schools = await School.find({}, { ID: 1, NAME_TX: 1 }).sort({ ID: 1 });
+    const schools = await School.find({}, { ID: 1, NAME_TX: 1, GROUP_CD: 1, REGION_CD: 1 }).sort({ ID: 1 });
     res.json(schools);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch schools' });

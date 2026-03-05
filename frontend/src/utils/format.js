@@ -14,5 +14,20 @@ export function formatNum(x) {
 }
 
 export function sumField(rows, field) {
-    return rows.reduce((acc, r) => acc + (Number.isFinite(r[field]) ? r[field] : 0), 0);
+    let sum = 0;
+    let debugCount = 0;
+    for (const r of rows) {
+        const val = r[field];
+        // Skip null, undefined, NaN, "NULL" string, and non-finite numbers
+        if (val === null || val === undefined || val === "NULL" || !Number.isFinite(val)) {
+            if (debugCount < 2) console.log(`DEBUG sumField skip - field: ${field}, val: ${val}, type: ${typeof val}`);
+            debugCount++;
+            continue;
+        }
+        sum += val;
+    }
+    if (rows.length > 0) {
+        console.log(`DEBUG sumField(${field}): processed ${rows.length} rows, skipped ${debugCount}, total sum: ${sum}`);
+    }
+    return sum;
 }

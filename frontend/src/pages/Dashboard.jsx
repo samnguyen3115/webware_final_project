@@ -1,7 +1,6 @@
 // src/pages/Dashboard.jsx
 import React, { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { Link } from "react-router-dom";
 import "../App.css";
 
 import {
@@ -58,7 +57,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-white text-black">
-      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} />
+      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} userRole={user?.role} />
 
       <main className="mx-auto px-4 py-6">
         <DashboardControls
