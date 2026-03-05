@@ -1,16 +1,23 @@
-import React, { useMemo, useState } from "react";
-import { MicrophoneIcon, XIcon, CheckCircleIcon, ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
-import { useWebSpeech } from "../hooks/useWebSpeech"; // adjust path if needed
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+    MicrophoneIcon,
+    XIcon,
+    CheckCircleIcon,
+    ArrowCounterClockwiseIcon,
+} from "@phosphor-icons/react";
+import { useWebSpeech } from "../hooks/useWebSpeech";
 
 const FIELDS = [
-    { key: "year", label: "Year", aliases: ["year"] },
-    { key: "applicants", label: "Applicants", aliases: ["applicants", "total applicants"] },
-    { key: "enrolled", label: "Enrolled", aliases: ["enrolled", "total enrolled"] },
-    { key: "internationalPerc", label: "% International", aliases: ["international", "international percent", "international percentage"] },
-    { key: "teacherStudentRatio", label: "Student-Teacher Ratio", aliases: ["ratio", "student teacher ratio", "teacher student ratio"] },
-    { key: "avgGPA", label: "Average GPA", aliases: ["gpa", "average gpa"] },
-    { key: "aveTestScore", label: "Average Test Score", aliases: ["test score", "average test score", "score"] },
-    { key: "percentAthlete", label: "% Athletics", aliases: ["athlete", "athletes", "percent athlete", "athletics"] },
+    { key: "SCHOOL_ID", label: "School ID", aliases: ["school id", "school"] },
+    { key: "SCHOOL_YR_ID", label: "School Year ID", aliases: ["school year", "school year id", "year id"] },
+    { key: "GRADE_DEF_ID", label: "Grade Definition ID", aliases: ["grade definition", "grade id", "grade definition id"] },
+    { key: "CAPACITY_ENROLL", label: "Capacity Enrollment", aliases: ["capacity", "capacity enroll", "capacity enrollment"] },
+    { key: "CONTRACTED_ENROLL_BOYS", label: "Contracted Boys", aliases: ["contracted boys", "boys contracted", "boys enrollment"] },
+    { key: "CONTRACTED_ENROLL_GIRLS", label: "Contracted Girls", aliases: ["contracted girls", "girls contracted", "girls enrollment"] },
+    { key: "CONTRACTED_ENROLL_NB", label: "Contracted Non-Binary", aliases: ["contracted non binary", "non binary", "nb enrollment"] },
+    { key: "COMPLETED_APPLICATION_TOTAL", label: "Completed Applications", aliases: ["completed applications", "applications total", "completed application total"] },
+    { key: "ACCEPTANCES_TOTAL", label: "Acceptances", aliases: ["acceptances", "acceptance total", "accepted total"] },
+    { key: "NEW_ENROLLMENTS_TOTAL", label: "New Enrollments", aliases: ["new enrollments", "new enrollment total", "enrollments total"] },
 ];
 
 const normalize = (s) =>
@@ -22,17 +29,16 @@ const normalize = (s) =>
 
 function parseNumber(raw) {
     const cleaned = normalize(raw).replace("%", "").trim();
-    // handle "point" e.g. "3 point 8"
     const pointFixed = cleaned.replace(/\bpoint\b/g, ".");
     const match = pointFixed.match(/-?\d+(\.\d+)?/);
-    return match ? match[0] : null; // keep string; your form stores strings
+    return match ? match[0] : null;
 }
 
 function findFieldKey(text) {
     const t = normalize(text);
-    // prefer longer aliases first
-    const aliasList = FIELDS.flatMap((f) => f.aliases.map((a) => ({ key: f.key, alias: a })))
-        .sort((a, b) => b.alias.length - a.alias.length);
+    const aliasList = FIELDS.flatMap((f) =>
+        f.aliases.map((a) => ({ key: f.key, alias: a }))
+    ).sort((a, b) => b.alias.length - a.alias.length);
 
     for (const { key, alias } of aliasList) {
         if (t.includes(normalize(alias))) return key;
@@ -43,16 +49,9 @@ function findFieldKey(text) {
 function parseUtteranceToPatch(utterance) {
     const t = normalize(utterance);
 
-    // Commands:
-    // "set year to 2024"
-    // "year 2024"
-    // "international percent 12"
-    // "gpa 3.8"
-    // "clear gpa"
-    // "undo"
-    // "apply"
     if (t.includes("undo")) return { __cmd: "undo" };
     if (t.includes("apply")) return { __cmd: "apply" };
+
     if (t.includes("clear")) {
         const key = findFieldKey(t);
         if (key) return { [key]: "" };
@@ -62,7 +61,6 @@ function parseUtteranceToPatch(utterance) {
     const key = findFieldKey(t);
     if (!key) return null;
 
-    // try to capture after "to" if present
     let rhs = t;
     const toIdx = t.indexOf(" to ");
     if (toIdx !== -1) rhs = t.slice(toIdx + 4);
@@ -76,29 +74,52 @@ function parseUtteranceToPatch(utterance) {
 export default function BenchmarkVoiceFillButton({
     formData,
     setFormData,
-    validateAndShowErrors, // optional function you pass in
+    validateAndShowErrors,
 }) {
+    const DEBUG_VOICE = true;
+
+    const log = (...args) => {
+        if (!DEBUG_VOICE) return;
+        console.log("[VoiceFill]", ...args);
+    };
+
+    const [debugLog, setDebugLog] = useState([]);
+    const pushDebug = useCallback((line) => {
+        if (!DEBUG_VOICE) return;
+        setDebugLog((prev) => {
+            const next = [...prev, line];
+            return next.length > 250 ? next.slice(next.length - 250) : next;
+        });
+    }, [DEBUG_VOICE]);
+
     const [open, setOpen] = useState(false);
     const [transcript, setTranscript] = useState("");
     const [finalTranscript, setFinalTranscript] = useState("");
-
-    // pendingPatch is what user can preview before applying
     const [pendingPatch, setPendingPatch] = useState({});
-    const [history, setHistory] = useState([]); // store previous formData snapshots for undo
+    const [history, setHistory] = useState([]);
 
     const pendingEntries = useMemo(() => Object.entries(pendingPatch), [pendingPatch]);
 
-    const applyPatch = () => {
+    const applyPatch = useCallback(() => {
+        log("APPLY clicked. pendingPatch =", pendingPatch);
+        pushDebug(`APPLY: ${JSON.stringify(pendingPatch)}`);
+
         if (pendingEntries.length === 0) return;
+
         setHistory((h) => [...h, formData]);
+
         const next = { ...formData };
         for (const [k, v] of pendingEntries) next[k] = v;
+
         setFormData(next);
         setPendingPatch({});
         if (validateAndShowErrors) validateAndShowErrors(next);
-    };
+    }, [formData, pendingEntries, pendingPatch, pushDebug, setFormData, validateAndShowErrors]);
 
-    const undo = () => {
+    const undo = useCallback(() => {
+        log("UNDO clicked. history.length =", history.length);
+        pushDebug("UNDO");
+
         setHistory((h) => {
             if (h.length === 0) return h;
             const prev = h[h.length - 1];
@@ -106,23 +127,56 @@ export default function BenchmarkVoiceFillButton({
             if (validateAndShowErrors) validateAndShowErrors(prev);
             return h.slice(0, -1);
         });
+
         setPendingPatch({});
-    };
+    }, [history.length, pushDebug, setFormData, validateAndShowErrors]);
 
-    const { supported, listening, toggle, stop } = useWebSpeech({
-        onInterimText: (t) => setTranscript(t),
-        onFinalText: (t) => {
-            setFinalTranscript(t);
+    // ✅ Stable callbacks (prevents hook re-init loops)
+    const onInterimText = useCallback((t) => {
+        setTranscript(t);
+        log("INTERIM:", t);
+        pushDebug(`INTERIM: ${t}`);
+    }, [pushDebug]);
 
-            const patch = parseUtteranceToPatch(t);
-            if (!patch) return;
+    const onFinalText = useCallback((t) => {
+        setFinalTranscript(t);
+        log("FINAL:", t);
+        pushDebug(`FINAL: ${t}`);
 
-            if (patch.__cmd === "apply") return applyPatch();
-            if (patch.__cmd === "undo") return undo();
+        const patch = parseUtteranceToPatch(t);
+        log("PARSE:", patch);
+        pushDebug(`PARSE: ${JSON.stringify(patch)}`);
 
-            setPendingPatch((p) => ({ ...p, ...patch }));
-        },
+        if (!patch) return;
+
+        if (patch.__cmd === "apply") return applyPatch();
+        if (patch.__cmd === "undo") return undo();
+
+        setPendingPatch((p) => {
+            const merged = { ...p, ...patch };
+            log("PENDING PATCH ->", merged);
+            pushDebug(`PENDING: ${JSON.stringify(merged)}`);
+            return merged;
+        });
+    }, [applyPatch, pushDebug, undo]);
+
+    const onDebug = useCallback((line) => {
+        // hook debug lines
+        pushDebug(`HOOK: ${line}`);
+    }, [pushDebug]);
+
+    const { supported, listening, start, stop } = useWebSpeech({
+        onInterimText,
+        onFinalText,
+        debug: DEBUG_VOICE,
+        debugLabel: "BenchmarkWebSpeech",
+        onDebug,
     });
+
+    useEffect(() => {
+        log(listening ? "LISTENING STARTED" : "LISTENING STOPPED");
+        pushDebug(listening ? "STATE: LISTENING STARTED" : "STATE: LISTENING STOPPED");
+    }, [listening, pushDebug]);
 
     if (!supported) return null;
 
@@ -148,22 +202,12 @@ export default function BenchmarkVoiceFillButton({
                             size={20}
                             style={{ cursor: "pointer" }}
                             onClick={() => {
+                                log("UI close -> stop()");
+                                pushDebug("UI: close -> stop()");
                                 setOpen(false);
                                 stop();
                             }}
                         />
-                    </div>
-
-                    <div style={{ marginTop: 8, fontSize: 12, opacity: 0.9 }}>
-                        Say things like:
-                        <div style={{ marginTop: 6 }}>
-                            • “set year to 2024”<br />
-                            • “applicants 5200”<br />
-                            • “international percent 12”<br />
-                            • “gpa 3.8”<br />
-                            • “clear test score”<br />
-                            • “apply” / “undo”
-                        </div>
                     </div>
 
                     <div style={{ marginTop: 10, fontSize: 13 }}>
@@ -175,9 +219,7 @@ export default function BenchmarkVoiceFillButton({
                         <div style={{ fontWeight: 700, marginBottom: 8 }}>Preview changes</div>
 
                         {pendingEntries.length === 0 ? (
-                            <div style={{ fontSize: 13, opacity: 0.8 }}>
-                                No pending changes yet. Speak a field + value.
-                            </div>
+                            <div style={{ fontSize: 13, opacity: 0.8 }}>No pending changes yet. Speak a field + value.</div>
                         ) : (
                             <div style={{ display: "grid", gap: 6 }}>
                                 {pendingEntries.map(([k, v]) => {
@@ -238,15 +280,7 @@ export default function BenchmarkVoiceFillButton({
                     </div>
 
                     <button
-                        onClick={() => {
-                            if (listening) {
-                                stop();            // <-- force stop
-                                setTranscript(""); // optional: clear interim
-                                // setFinalTranscript(""); // optional
-                            } else {
-                                toggle();          // or start() if your hook exposes it
-                            }
-                        }}
+                        onClick={() => (listening ? stop() : start())}
                         style={{
                             marginTop: 12,
                             width: "100%",
@@ -261,12 +295,53 @@ export default function BenchmarkVoiceFillButton({
                     >
                         {listening ? "Stop Listening" : "Start Listening"}
                     </button>
+
+                    {DEBUG_VOICE && (
+                        <div style={{ marginTop: 12 }}>
+                            <div style={{ fontWeight: 700, marginBottom: 6 }}>Debug Log</div>
+                            <div
+                                style={{
+                                    maxHeight: 160,
+                                    overflow: "auto",
+                                    fontSize: 11,
+                                    background: "#f9fafb",
+                                    border: "1px solid #e5e7eb",
+                                    borderRadius: 10,
+                                    padding: 8,
+                                    whiteSpace: "pre-wrap",
+                                }}
+                            >
+                                {debugLog.length === 0 ? "No logs yet." : debugLog.join("\n")}
+                            </div>
+
+                            <button
+                                onClick={() => setDebugLog([])}
+                                style={{
+                                    marginTop: 8,
+                                    padding: "6px 10px",
+                                    borderRadius: 8,
+                                    border: "1px solid #e5e7eb",
+                                    background: "white",
+                                    cursor: "pointer",
+                                    fontWeight: 700,
+                                }}
+                            >
+                                Clear Debug Log
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Floating button on the right for FORM filling */}
             <button
-                onClick={() => setOpen((v) => !v)}
+                onClick={() => {
+                    setOpen((v) => {
+                        const next = !v;
+                        pushDebug(`UI: panel ${next ? "opened" : "closed"}`);
+                        if (!next) stop();
+                        return next;
+                    });
+                }}
                 title="Voice-fill Benchmark Form"
                 style={{
                     position: "fixed",

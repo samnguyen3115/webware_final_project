@@ -8,18 +8,20 @@ import BenchmarkVoiceFillButton from "./BenchmarkVoiceFillButton"; // <-- adjust
 
 const BenchmarkForm = () => {
   const { logout, user } = useContext(AuthContext) || {};
-  const schoolId = user?.schoolId ?? "N/A";
+  const schoolId = Number(user?.schoolId) || "N/A";
 
   /* stores user input */
   const [formData, setFormData] = useState({
-    year: "",
-    applicants: "",
-    enrolled: "",
-    internationalPerc: "",
-    teacherStudentRatio: "",
-    avgGPA: "",
-    aveTestScore: "",
-    percentAthlete: "",
+    SCHOOL_ID: Number(user?.schoolId) || "",
+    SCHOOL_YR_ID: "",
+    GRADE_DEF_ID: "",
+    CAPACITY_ENROLL: "",
+    CONTRACTED_ENROLL_BOYS: "",
+    CONTRACTED_ENROLL_GIRLS: "",
+    CONTRACTED_ENROLL_NB: "",
+    COMPLETED_APPLICATION_TOTAL: "",
+    ACCEPTANCES_TOTAL: "",
+    NEW_ENROLLMENTS_TOTAL: "",
   });
 
   /* if validation fails error appears */
@@ -39,42 +41,75 @@ const BenchmarkForm = () => {
   const validate = (data = formData) => {
     let error = {};
 
-    if (!data.year) error.year = "Year is required.";
+    const requiredFields = ["SCHOOL_ID", "SCHOOL_YR_ID", "GRADE_DEF_ID"];
+    requiredFields.forEach((field) => {
+      if (data[field] === "" || data[field] === null || data[field] === undefined) {
+        error[field] = "Required field.";
+      }
+    });
 
-    // NOTE: your current rule says test score 0-100 (if you meant SAT/ACT, change this)
-    if (data.aveTestScore && (Number(data.aveTestScore) < 0 || Number(data.aveTestScore) > 100)) {
-      error.aveTestScore = "Test score must be between 0 and 100.";
+    const numericFields = [
+      "SCHOOL_ID",
+      "SCHOOL_YR_ID",
+      "GRADE_DEF_ID",
+      "CAPACITY_ENROLL",
+      "CONTRACTED_ENROLL_BOYS",
+      "CONTRACTED_ENROLL_GIRLS",
+      "CONTRACTED_ENROLL_NB",
+      "COMPLETED_APPLICATION_TOTAL",
+      "ACCEPTANCES_TOTAL",
+      "NEW_ENROLLMENTS_TOTAL",
+    ];
+
+    numericFields.forEach((field) => {
+      const value = data[field];
+      if (value === "" || value === null || value === undefined) return;
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) {
+        error[field] = "Must be a valid number.";
+      } else if (parsed < 0) {
+        error[field] = "Cannot be negative.";
+      }
+    });
+
+    if (
+      data.ACCEPTANCES_TOTAL !== "" &&
+      data.COMPLETED_APPLICATION_TOTAL !== "" &&
+      Number(data.ACCEPTANCES_TOTAL) > Number(data.COMPLETED_APPLICATION_TOTAL)
+    ) {
+      error.ACCEPTANCES_TOTAL = "Cannot exceed completed applications.";
     }
 
-    if (data.teacherStudentRatio && Number(data.teacherStudentRatio) <= 0) {
-      error.teacherStudentRatio = "Ratio must be greater than 0.";
-    }
-
-    /* Field checks */
-    if (!data.applicants) error.applicants = "Total applicants required.";
-    if (!data.enrolled) error.enrolled = "Total enrolled required.";
-
-    if (data.enrolled && data.applicants && Number(data.enrolled) > Number(data.applicants)) {
-      error.enrolled = "Total enrolled cannot exceed total applicants.";
-    }
-
-    /* Check GPA input */
-    if (data.avgGPA && (Number(data.avgGPA) < 0 || Number(data.avgGPA) > 4)) {
-      error.avgGPA = "GPA must be between 0 and 4.";
-    }
-
-    /* Check percentage inputs */
-    if (data.percentAthlete && (Number(data.percentAthlete) < 0 || Number(data.percentAthlete) > 100)) {
-      error.percentAthlete = "Must be between 0 and 100.";
-    }
-
-    if (data.internationalPerc && (Number(data.internationalPerc) < 0 || Number(data.internationalPerc) > 100)) {
-      error.internationalPerc = "Must be between 0 and 100.";
+    if (
+      data.NEW_ENROLLMENTS_TOTAL !== "" &&
+      data.ACCEPTANCES_TOTAL !== "" &&
+      Number(data.NEW_ENROLLMENTS_TOTAL) > Number(data.ACCEPTANCES_TOTAL)
+    ) {
+      error.NEW_ENROLLMENTS_TOTAL = "Cannot exceed acceptances.";
     }
 
     setErrors(error);
     return Object.keys(error).length === 0;
   };
+
+  const toNumberOrNull = (value) => {
+    if (value === "" || value === null || value === undefined) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const buildPayload = (data) => ({
+    SCHOOL_ID: Number(data.SCHOOL_ID),
+    SCHOOL_YR_ID: Number(data.SCHOOL_YR_ID),
+    GRADE_DEF_ID: Number(data.GRADE_DEF_ID),
+    CAPACITY_ENROLL: toNumberOrNull(data.CAPACITY_ENROLL),
+    CONTRACTED_ENROLL_BOYS: toNumberOrNull(data.CONTRACTED_ENROLL_BOYS),
+    CONTRACTED_ENROLL_GIRLS: toNumberOrNull(data.CONTRACTED_ENROLL_GIRLS),
+    CONTRACTED_ENROLL_NB: toNumberOrNull(data.CONTRACTED_ENROLL_NB),
+    COMPLETED_APPLICATION_TOTAL: toNumberOrNull(data.COMPLETED_APPLICATION_TOTAL) ?? 0,
+    ACCEPTANCES_TOTAL: toNumberOrNull(data.ACCEPTANCES_TOTAL) ?? 0,
+    NEW_ENROLLMENTS_TOTAL: toNumberOrNull(data.NEW_ENROLLMENTS_TOTAL) ?? 0,
+  });
 
   const validateAndShowErrors = (next) => {
     // validates and updates error UI
@@ -88,10 +123,13 @@ const BenchmarkForm = () => {
     if (validate()) {
       try {
         setIsSubmitting(true);
-        await axios.post("/api/benchmark", formData);
+        const payload = buildPayload(formData);
+        await axios.post("/api/benchmark", payload, { withCredentials: true });
         alert("Form is saved and submitted.");
+        setErrors({});
       } catch (err) {
-        alert("Error saving form.");
+        const message = err?.response?.data?.error || err?.response?.data?.message || "Error saving form.";
+        alert(message);
       }
       setIsSubmitting(false);
     }
@@ -122,118 +160,122 @@ const BenchmarkForm = () => {
         </div>
 
         <div className="max-w-3xl mx-auto mt-4 bg-white border p-8 rounded shadow">
-          <h2 className="text-2xl font-semibold mb-6">{formData.year} Benchmark Form</h2>
+          <h2 className="text-2xl font-semibold mb-6">Benchmark Form</h2>
 
           <form onSubmit={submit} className="space-y-6">
             <div>
-              <h3 className="font-semibold mb-2">Year</h3>
+              <h3 className="font-semibold mb-2">Required IDs</h3>
+
               <input
                 type="number"
-                name="year"
-                value={formData.year}              // ✅ controlled
-                placeholder="Year"
+                name="SCHOOL_ID"
+                value={formData.SCHOOL_ID}
+                placeholder="School ID"
                 onChange={change}
                 className="w-full border p-2 rounded mb-2"
               />
-              {errors.year && <p className="text-red-600 text-sm">{errors.year}</p>}
-            </div>
-
-            {/* Admissions */}
-            <div>
-              <h3 className="font-semibold mb-2">Admissions</h3>
+              {errors.SCHOOL_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_ID}</p>}
 
               <input
                 type="number"
-                name="applicants"
-                value={formData.applicants}        // ✅ controlled
-                placeholder="Total Applicants"
+                name="SCHOOL_YR_ID"
+                value={formData.SCHOOL_YR_ID}
+                placeholder="School Year ID"
                 onChange={change}
                 className="w-full border p-2 rounded mb-2"
               />
-              {errors.applicants && <p className="text-red-600 text-sm">{errors.applicants}</p>}
+              {errors.SCHOOL_YR_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_YR_ID}</p>}
 
               <input
                 type="number"
-                name="enrolled"
-                value={formData.enrolled}          // ✅ controlled
-                placeholder="Total Enrolled"
+                name="GRADE_DEF_ID"
+                value={formData.GRADE_DEF_ID}
+                placeholder="Grade Definition ID"
                 onChange={change}
                 className="w-full border p-2 rounded"
               />
-              {errors.enrolled && <p className="text-red-600 text-sm">{errors.enrolled}</p>}
+              {errors.GRADE_DEF_ID && <p className="text-red-600 text-sm">{errors.GRADE_DEF_ID}</p>}
             </div>
 
-            {/* Demographics */}
             <div>
-              <h3 className="font-semibold mb-2">Demographics</h3>
+              <h3 className="font-semibold mb-2">Capacity & Contracted Enrollment</h3>
 
               <input
                 type="number"
-                name="internationalPerc"
-                value={formData.internationalPerc} // ✅ controlled
-                placeholder="% International Students"
+                name="CAPACITY_ENROLL"
+                value={formData.CAPACITY_ENROLL}
+                placeholder="Capacity Enrollment"
+                onChange={change}
+                className="w-full border p-2 rounded mb-2"
+              />
+              {errors.CAPACITY_ENROLL && <p className="text-red-600 text-sm">{errors.CAPACITY_ENROLL}</p>}
+
+              <input
+                type="number"
+                name="CONTRACTED_ENROLL_BOYS"
+                value={formData.CONTRACTED_ENROLL_BOYS}
+                placeholder="Contracted Enrollment (Boys)"
+                onChange={change}
+                className="w-full border p-2 rounded mb-2"
+              />
+              {errors.CONTRACTED_ENROLL_BOYS && <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_BOYS}</p>}
+
+              <input
+                type="number"
+                name="CONTRACTED_ENROLL_GIRLS"
+                value={formData.CONTRACTED_ENROLL_GIRLS}
+                placeholder="Contracted Enrollment (Girls)"
+                onChange={change}
+                className="w-full border p-2 rounded mb-2"
+              />
+              {errors.CONTRACTED_ENROLL_GIRLS && <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_GIRLS}</p>}
+
+              <input
+                type="number"
+                name="CONTRACTED_ENROLL_NB"
+                value={formData.CONTRACTED_ENROLL_NB}
+                placeholder="Contracted Enrollment (Non-Binary)"
                 onChange={change}
                 className="w-full border p-2 rounded"
               />
-              {errors.internationalPerc && (
-                <p className="text-red-600 text-sm">{errors.internationalPerc}</p>
+              {errors.CONTRACTED_ENROLL_NB && (
+                <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_NB}</p>
               )}
             </div>
 
-            {/* Academics */}
             <div>
-              <h3 className="font-semibold mb-2">Academics</h3>
+              <h3 className="font-semibold mb-2">Application Outcomes</h3>
 
               <input
                 type="number"
-                step="0.01"
-                name="avgGPA"
-                value={formData.avgGPA}            // ✅ controlled
-                placeholder="Average GPA (0-4)"
+                name="COMPLETED_APPLICATION_TOTAL"
+                value={formData.COMPLETED_APPLICATION_TOTAL}
+                placeholder="Completed Applications Total"
                 onChange={change}
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded mb-2"
               />
-              {errors.avgGPA && <p className="text-red-600 text-sm">{errors.avgGPA}</p>}
+              {errors.COMPLETED_APPLICATION_TOTAL && <p className="text-red-600 text-sm">{errors.COMPLETED_APPLICATION_TOTAL}</p>}
 
               <input
                 type="number"
-                step="0.01"
-                name="aveTestScore"
-                value={formData.aveTestScore}      // ✅ controlled
-                placeholder="Average Test Score"
+                name="ACCEPTANCES_TOTAL"
+                value={formData.ACCEPTANCES_TOTAL}
+                placeholder="Acceptances Total"
                 onChange={change}
                 className="w-full border p-2 rounded mt-2"
               />
-              {errors.aveTestScore && <p className="text-red-600 text-sm">{errors.aveTestScore}</p>}
+              {errors.ACCEPTANCES_TOTAL && <p className="text-red-600 text-sm">{errors.ACCEPTANCES_TOTAL}</p>}
 
               <input
                 type="number"
-                step="0.01"
-                name="teacherStudentRatio"
-                value={formData.teacherStudentRatio} // ✅ controlled
-                placeholder="Student-Teacher Ratio"
+                name="NEW_ENROLLMENTS_TOTAL"
+                value={formData.NEW_ENROLLMENTS_TOTAL}
+                placeholder="New Enrollments Total"
                 onChange={change}
                 className="w-full border p-2 rounded mt-2"
               />
-              {errors.teacherStudentRatio && (
-                <p className="text-red-600 text-sm">{errors.teacherStudentRatio}</p>
-              )}
-            </div>
-
-            {/* Athletics */}
-            <div>
-              <h3 className="font-semibold mb-2">Athletics</h3>
-
-              <input
-                type="number"
-                name="percentAthlete"
-                value={formData.percentAthlete}    // ✅ controlled
-                placeholder="% Students in Athletics"
-                onChange={change}
-                className="w-full border p-2 rounded"
-              />
-              {errors.percentAthlete && (
-                <p className="text-red-600 text-sm">{errors.percentAthlete}</p>
+              {errors.NEW_ENROLLMENTS_TOTAL && (
+                <p className="text-red-600 text-sm">{errors.NEW_ENROLLMENTS_TOTAL}</p>
               )}
             </div>
 

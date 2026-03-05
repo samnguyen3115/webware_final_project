@@ -1,24 +1,86 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
+/**
+ * Key fixes:
+ * - SpeechRecognition instance is created ONLY when lang/continuous/interimResults change.
+ * - onFinalText/onInterimText/onDebug/debugLabel/debug are kept in refs (no re-init loop).
+ * - stop() uses abort() for hard-stop.
+ */
 export function useWebSpeech({
     lang = "en-US",
     continuous = true,
     interimResults = true,
     onFinalText,
     onInterimText,
+
+    debug = false,
+    debugLabel = "useWebSpeech",
+    onDebug, // optional: push debug lines to UI
 } = {}) {
     const recognitionRef = useRef(null);
-    const listeningRef = useRef(false);
+
+    // "user wants listening" gate for auto-restart onend
+    const listeningWantedRef = useRef(false);
+
+    // callback refs (so changing callbacks doesn't recreate recognition)
+    const onFinalTextRef = useRef(onFinalText);
+    const onInterimTextRef = useRef(onInterimText);
+    const debugRef = useRef(debug);
+    const debugLabelRef = useRef(debugLabel);
+    const onDebugRef = useRef(onDebug);
 
     const [supported, setSupported] = useState(true);
     const [listening, setListening] = useState(false);
 
+    // keep refs updated
+    useEffect(() => {
+        onFinalTextRef.current = onFinalText;
+    }, [onFinalText]);
+
+    useEffect(() => {
+        onInterimTextRef.current = onInterimText;
+    }, [onInterimText]);
+
+    useEffect(() => {
+        debugRef.current = debug;
+    }, [debug]);
+
+    useEffect(() => {
+        debugLabelRef.current = debugLabel;
+    }, [debugLabel]);
+
+    useEffect(() => {
+        onDebugRef.current = onDebug;
+    }, [onDebug]);
+
+    const dbg = useCallback((...args) => {
+        if (!debugRef.current) return;
+
+        const label = debugLabelRef.current || "useWebSpeech";
+        console.log(`[${label}]`, ...args);
+
+        const cb = onDebugRef.current;
+        if (typeof cb === "function") {
+            // keep UI debug line simple and safe
+            const line = args
+                .map((x) => (typeof x === "string" ? x : String(x)))
+                .join(" ");
+            try {
+                cb(line);
+            } catch {
+                // ignore UI debug errors
+            }
+        }
+    }, []);
+
+    // Create recognition ONLY when core config changes
     useEffect(() => {
         const SpeechRecognition =
             window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
             setSupported(false);
+            dbg("SpeechRecognition NOT supported.");
             return;
         }
 
@@ -27,61 +89,113 @@ export function useWebSpeech({
         recognition.interimResults = interimResults;
         recognition.continuous = continuous;
 
-        recognition.onstart = () => setListening(true);
+        recognition.onstart = () => {
+            setListening(true);
+            dbg("EVENT onstart -> listening=true");
+        };
 
         recognition.onresult = (event) => {
-            // Build full transcript across results
             let full = "";
             for (let i = 0; i < event.results.length; i++) {
                 full += event.results[i][0].transcript;
             }
 
-            // Interim callback
-            if (onInterimText) onInterimText(full);
+            dbg("EVENT onresult interim:", full);
 
-            // Final callback for latest final segment
+            const interimCb = onInterimTextRef.current;
+            if (typeof interimCb === "function") interimCb(full);
+
             const last = event.results[event.results.length - 1];
             if (last?.isFinal) {
                 const finalFull = full.trim();
-                if (onFinalText) onFinalText(finalFull);
+                dbg("EVENT onresult FINAL:", finalFull);
+                const finalCb = onFinalTextRef.current;
+                if (typeof finalCb === "function") finalCb(finalFull);
             }
         };
 
+        recognition.onerror = (e) => {
+            dbg("EVENT onerror:", e?.error || e);
+        };
+
         recognition.onend = () => {
-            // Auto-restart if user still wants listening
-            if (listeningRef.current) recognition.start();
-            else setListening(false);
+            dbg("EVENT onend. listeningWanted=", listeningWantedRef.current);
+
+            if (listeningWantedRef.current) {
+                try {
+                    dbg("Auto-restart -> start()");
+                    recognition.start();
+                } catch (e) {
+                    dbg("Auto-restart failed:", e?.message || e);
+                    setListening(false);
+                }
+            } else {
+                dbg("Not restarting -> listening=false");
+                setListening(false);
+            }
         };
 
         recognitionRef.current = recognition;
+        dbg("INIT recognition created.", {
+            lang,
+            interimResults,
+            continuous,
+        });
 
         return () => {
+            dbg("CLEANUP -> stop/abort recognition");
             try {
-                recognition.stop();
-            } catch { }
+                listeningWantedRef.current = false;
+                recognition.abort?.();
+                recognition.stop?.();
+            } catch {
+                // ignore
+            }
+            recognitionRef.current = null;
         };
-    }, [lang, interimResults, continuous, onFinalText, onInterimText]);
+    }, [lang, interimResults, continuous, dbg]);
 
-    const start = () => {
+    const start = useCallback(() => {
         const rec = recognitionRef.current;
         if (!rec) return;
-        listeningRef.current = true;
+
+        dbg("CALL start()");
+        listeningWantedRef.current = true;
+
         try {
             rec.start();
-        } catch { }
-    };
+        } catch (e) {
+            dbg("start() threw:", e?.message || e);
+        }
+    }, [dbg]);
 
-    const stop = () => {
+    const stop = useCallback(() => {
         const rec = recognitionRef.current;
         if (!rec) return;
-        listeningRef.current = false;
-        try {
-            rec.stop();
-        } catch { }
-        setListening(false);
-    };
 
-    const toggle = () => (listeningRef.current ? stop() : start());
+        dbg("CALL stop()");
+        listeningWantedRef.current = false;
+
+        try {
+            if (typeof rec.abort === "function") {
+                rec.abort();
+                dbg("stop(): abort()");
+            } else {
+                rec.stop();
+                dbg("stop(): stop()");
+            }
+        } catch (e) {
+            dbg("stop() threw:", e?.message || e);
+        }
+
+        // Immediate UI reflect; onend comes later
+        setListening(false);
+    }, [dbg]);
+
+    const toggle = useCallback(() => {
+        dbg("CALL toggle(). listeningWanted was:", listeningWantedRef.current);
+        return listeningWantedRef.current ? stop() : start();
+    }, [dbg, start, stop]);
 
     return { supported, listening, start, stop, toggle };
 }
