@@ -6,12 +6,13 @@ import { Link } from "react-router-dom";
 
 import BenchmarkVoiceFillButton from "./BenchmarkVoiceFillButton"; // <-- adjust path if needed
 
+
 const BenchmarkForm = () => {
   const { logout, user } = useContext(AuthContext) || {};
   const schoolId = Number(user?.schoolId) || "N/A";
 
   /* stores user input */
-  const [formData, setFormData] = useState({
+  const EMPTY_FORM = {
     SCHOOL_ID: Number(user?.schoolId) || "",
     SCHOOL_YR_ID: "",
     GRADE_DEF_ID: "",
@@ -22,7 +23,8 @@ const BenchmarkForm = () => {
     COMPLETED_APPLICATION_TOTAL: "",
     ACCEPTANCES_TOTAL: "",
     NEW_ENROLLMENTS_TOTAL: "",
-  });
+  };
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
   /* if validation fails error appears */
   const [errors, setErrors] = useState({});
@@ -126,6 +128,10 @@ const BenchmarkForm = () => {
         const payload = buildPayload(formData);
         await axios.post("/api/benchmark", payload, { withCredentials: true });
         alert("Form is saved and submitted.");
+        setFormData({
+          ...EMPTY_FORM,
+          SCHOOL_ID: Number(user?.schoolId) || ""
+        });
         setErrors({});
       } catch (err) {
         const message = err?.response?.data?.error || err?.response?.data?.message || "Error saving form.";
