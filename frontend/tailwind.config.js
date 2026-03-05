@@ -4,7 +4,10 @@ export default {
         "./src/**/*.{js,ts,jsx,tsx}",
     ],
     theme: {
+        colors: {},
+        fontFamily: {},
         extend: {},
+
     },
     plugins: [],
 }

@@ -8,6 +8,35 @@ import Dashboard from './pages/Dashboard';
 import Benchmark from './pages/benchmark';
 import PeerComparison from './pages/PeerComparison';
 import './App.css';
+// import SpeechRecognition, {useSpeechRecognition} from "react-speech-recognition";
+import "regenerator-runtime/runtime";
+import RouteCommands from "./components/RouteCommands.jsx";
+import VoiceInput from "./components/VoiceInput.jsx";
+import VoiceButton from './components/VoiceButton.jsx';
+
+// function VoiceRouter() {
+//     const navigate = useNavigate();
+//     const commands = [
+//         {
+//             command: ["go to *", "open *"],
+//             callback: (page) => {
+//                 const path = `/${page.toLowerCase()}`;
+//                 navigate(path);
+//             },
+//         },
+//     ];
+//
+//     const {transcript} = useSpeechRecognition({commands});
+//
+//     return (
+//         <>
+//             <p id = "transcript"> Transcript: {transcript}</p>
+//             <button onClick={SpeechRecognition.startListening}> Voice Input </button>
+//         </>
+//     );
+//
+// }
+
 
 function RoleBasedHomeRedirect() {
   const { isAuthenticated, loading, user } = React.useContext(AuthContext);
@@ -32,10 +61,24 @@ function RoleBasedHomeRedirect() {
 }
 
 function App() {
+
+  //const [redirectURL, setRedirectURL] = useState("");
+  const commands = [
+    { phrase: "go to dashboard", action: "/dashboard" },
+    { phrase: "go to login", action: "/login" },
+    { phrase: "go to sign up", action: "/signup" },
+    { phrase: ["log out", "logout"], action: () => console.log("Logging out...") }
+  ];
+
   return (
     <AuthProvider>
       <Router>
+        {/* <RouteCommands /> */}
+
+        {/*<VoiceRouter />*/}
+        <VoiceButton commands={commands} />
         <div className="app-container">
+          {/*<VoiceInput commands ={commands} />*/}
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
@@ -67,6 +110,7 @@ function App() {
           </Routes>
         </div>
       </Router>
+
     </AuthProvider>
   );
 }

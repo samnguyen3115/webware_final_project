@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "react-speech-recognition": "^3.10.0",
+    "regenerator-runtime": "^0.14.1"
+  }
+}

@@ -21,6 +21,7 @@ import DashboardControls from "../components/dashboard/DashboardControls";
 import KpiCards from "../components/dashboard/KpiCards";
 import ChartsSection from "../components/dashboard/ChartsSection";
 import { useDashboardData } from "../hooks/useDashboardData";
+import VoiceInput from "../components/VoiceInput.jsx";
 
 ChartJS.register(
   CategoryScale,
