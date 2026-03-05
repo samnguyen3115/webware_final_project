@@ -143,7 +143,7 @@ const BenchmarkForm = () => {
               </div>
             ))}
           </div>
-          {/* Student Teacher Ratio at bottom */}
+          {/* Student Teacher Ratio*/}
           <div style={{ display:"flex", gap:"1rem", marginTop:"1rem" }}>
             <label>Student : Teacher Ratio</label>
             <input type="number" name="numStudents" value={formData.numStudents} onChange={handleChange} placeholder="Students"/>
