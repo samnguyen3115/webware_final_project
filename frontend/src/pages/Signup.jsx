@@ -157,7 +157,7 @@ const Signup = () => {
             className="rounded-mb border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
             required
           >
-            <option value="school">Teacher/Student</option>
+            <option value="school">Teacher</option>
             <option value="admin">Admin</option>
           </select>
           

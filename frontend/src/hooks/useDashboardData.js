@@ -287,7 +287,8 @@ export function useDashboardData({ schoolId }) {
         // Get contracted enrollments (current enrolled students) from all activity rows
         const enrollBoys = sumField(activityFiltered, "CONTRACTED_ENROLL_BOYS");
         const enrollGirls = sumField(activityFiltered, "CONTRACTED_ENROLL_GIRLS");
-        const enrollTotal = enrollBoys + enrollGirls;
+        const enrollNB = sumField(activityFiltered, "CONTRACTED_ENROLL_NB");
+        const enrollTotal = enrollBoys + enrollGirls + enrollNB;
         
         // Acceptance rate: Acceptances / Applications (only if we have valid data)
         const acceptanceRate = appsTotal > 0 ? safeDiv(acceptTotal, appsTotal) : undefined;
@@ -316,6 +317,7 @@ export function useDashboardData({ schoolId }) {
             enrollmentRate,
             enrollBoys,
             enrollGirls,
+            enrollNB,
             cap,
         };
     }, [activityFiltered]);
@@ -345,12 +347,12 @@ export function useDashboardData({ schoolId }) {
 
     const genderDoughnutData = useMemo(() => {
         return {
-            labels: ["Boys", "Girls"],
+            labels: ["Boys", "Girls", "Non-Binary"],
             datasets: [
                 {
                     label: "New Enrollments",
-                    data: [admissionsAgg.enrollBoys, admissionsAgg.enrollGirls],
-                    backgroundColor: ["#404040", "#808080"],
+                    data: [admissionsAgg.enrollBoys, admissionsAgg.enrollGirls, admissionsAgg.enrollNB],
+                    backgroundColor: ["#404040", "#808080", "#D3D3D3"],
                     borderColor: "#000000",
                 },
             ],
@@ -387,7 +389,7 @@ export function useDashboardData({ schoolId }) {
         const pocEmployees = sumField(employeePersonnelFiltered, "POC_EMPLOYEES");
         const subcontractFTE = sumField(employeePersonnelFiltered, "SUBCONTRACT_FTE");
 
-        const studentsTotal = sumField(activityFiltered, "CONTRACTED_ENROLL_BOYS") + sumField(activityFiltered, "CONTRACTED_ENROLL_GIRLS");
+        const studentsTotal = sumField(activityFiltered, "CONTRACTED_ENROLL_BOYS") + sumField(activityFiltered, "CONTRACTED_ENROLL_GIRLS") + sumField(activityFiltered, "CONTRACTED_ENROLL_NB");
         const teacherCategoryCodes = new Set(["EMPCAT_T", "EMPCAT_TS"]);
         const teacherRows = employeePersonnelFiltered.filter((r) => {
             const categoryCode = String(r.EMP_CAT_CD ?? "").trim().toUpperCase();
