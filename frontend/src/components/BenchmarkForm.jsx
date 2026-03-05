@@ -172,58 +172,6 @@ export default function BenchmarkForm() {
   return (
     <div className="min-h-screen bg-[#F4F6F9]">
 
-      {/* header */}
-      <div className="bg-[#0F2D52] text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-5 flex items-center justify-between gap-4">
-          {/* left side */}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-white">Institutional Benchmark Management</h1>
-            <p className="text-sm text-gray-300 mt-0.5">
-              School ID: <span className="text-white font-medium">{schoolId}</span>
-              {Number.isFinite(Number(user?.schoolYearId)) && (
-                <> • Year: <span className="text-white font-medium">{user?.schoolYearId}</span></>
-              )}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <NavLink to="/dashboard" className={({ isActive }) =>
-                `relative flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg overflow-hidden transition-colors duration-300 group ${
-                  isActive ? "bg-[#FFA500] text-black" : "bg-white/10 text-white hover:bg-white/20"
-                }`
-              }>
-                <span className="transition-all duration-300 group-hover:-translate-x-2">Dashboard</span>
-                <span className="absolute right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">→</span>
-              </NavLink>
-              <NavLink to="/peer-comparison" className={({ isActive }) =>
-                `relative flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg overflow-hidden transition-colors duration-300 group ${
-                  isActive ? "bg-[#FFA500] text-black" : "bg-white/10 text-white hover:bg-white/20"
-                }`
-              }>
-                <span className="transition-all duration-300 group-hover:-translate-x-2">Peer Comparison</span>
-                <span className="absolute right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">→</span>
-              </NavLink>
-              <NavLink to="/benchmark" className={({ isActive }) =>
-                `relative flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg overflow-hidden transition-colors duration-300 group ${
-                  isActive ? "bg-[#FFA500] text-black" : "bg-white/10 text-white hover:bg-white/20"
-                }`
-              }>
-                <span className="transition-all duration-300 group-hover:-translate-x-2">Benchmark</span>
-                <span className="absolute right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">→</span>
-              </NavLink>
-            </div>
-          </div>
-
-          {/* logout */}
-          <button
-            type="button"
-            onClick={logout}
-            className="relative shrink-0 flex items-center justify-center px-5 py-2.5 text-sm font-semibold rounded-lg overflow-hidden transition-colors duration-300 group bg-[#D94141] text-white hover:bg-[#B23030]"
-          >
-            <span className="transition-all duration-300 group-hover:-translate-x-2">Logout</span>
-            <span className="absolute right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">→</span>
-          </button>
-        </div>
-      </div>
-
       {/* kpi */}
       <div className="max-w-6xl mx-auto mt-10 grid grid-cols-3 gap-6 text-center">
         <StatCard title="Acceptance Rate" value={`${acceptanceRate}%`} />
@@ -313,7 +261,7 @@ export default function BenchmarkForm() {
                   <td className="p-3">{rec.COMPLETED_APPLICATION_TOTAL}</td>
                   <td className="p-3">{rec.ACCEPTANCES_TOTAL}</td>
                   <td className="p-3">{rec.NEW_ENROLLMENTS_TOTAL}</td>
-                  <td className="py-2 flex justify-center gap-6 min-w-[160px]">
+                  <td className="py-2 flex justify-center gap-6 min-w-40">
                     <ArrowButton onClick={() => loadForEdit(rec)} small>Edit</ArrowButton>
                     <ArrowButton onClick={() => deleteRecord(rec.SCHOOL_YR_ID)} small bg="#D94141" hoverBg="#B23030" textColor="white">Delete</ArrowButton>
                   </td>
