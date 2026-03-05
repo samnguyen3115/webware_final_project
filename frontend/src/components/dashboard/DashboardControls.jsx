@@ -1,6 +1,5 @@
 import React from "react";
 import { formatNum } from "../../utils/format";
-import { Link } from "react-router-dom"; //i added
 export default function DashboardControls({
     category,
     setCategory,
@@ -11,7 +10,6 @@ export default function DashboardControls({
     err,
     activityRowsCount,
     enrollmentRowsCount,
-    canOpenBenchmark,
 }) {
     return (
         <div className="mb-6 grid gap-3 md:grid-cols-3">
@@ -23,6 +21,7 @@ export default function DashboardControls({
                     className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-black outline-none"
                 >
                     <option>Admissions</option>
+                    <option>Employee</option>
                 </select>
                 <p className="mt-2 text-xs text-gray-600">
                 </p>
@@ -60,16 +59,7 @@ export default function DashboardControls({
                     </div>
                 ) : null}
             </div>
-            {canOpenBenchmark ? (
-                <div className="rounded-xl border border-gray-400 bg-white p-4 flex items-center justify-center">
-                    <Link
-                        to="/benchmark"
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-                    >
-                        Open Benchmark Form
-                    </Link>
-                </div>
-            ) : null}
+
         </div>
     );
 }

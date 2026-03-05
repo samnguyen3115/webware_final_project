@@ -91,8 +91,12 @@ export default function BenchmarkVoiceFillButton({
     formData,
     setFormData,
     validateAndShowErrors,
+    category = "Admissions",
 }) {
     const [open, setOpen] = useState(false);
+
+    // Determine button color based on category
+    const buttonColor = category === "Admissions" ? "#0ea5e9" : "#8b5cf6"; // Blue for Admissions, Purple for Employee
     const [transcript, setTranscript] = useState("");
     const [finalTranscript, setFinalTranscript] = useState("");
     const [pendingPatch, setPendingPatch] = useState({});
@@ -260,7 +264,7 @@ export default function BenchmarkVoiceFillButton({
                             cursor: "pointer",
                             fontWeight: "bold",
                             color: "white",
-                            background: listening ? "#ef4444" : "#0ea5e9",
+                            background: listening ? "#ef4444" : buttonColor,
                         }}
                     >
                         {listening ? "Stop Listening" : "Start Listening"}
@@ -285,7 +289,7 @@ export default function BenchmarkVoiceFillButton({
                     height: 60,
                     borderRadius: "50%",
                     border: "none",
-                    background: "#0ea5e9",
+                    background: buttonColor,
                     cursor: "pointer",
                     boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
                     display: "flex",

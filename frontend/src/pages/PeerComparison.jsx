@@ -19,6 +19,8 @@ export default function PeerComparison() {
   const schoolId = user?.schoolId ?? 1;
 
   const {
+    category,
+    setCategory,
     schoolYearId,
     setSchoolYearId,
     availableYears,
@@ -50,7 +52,19 @@ export default function PeerComparison() {
       <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} userRole={user?.role} />
 
       <main className="mx-auto px-4 py-6">
-        <section className="mb-6 grid gap-3 md:grid-cols-2">
+        <section className="mb-6 grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-gray-400 bg-white p-4">
+            <label className="block text-xs font-medium text-gray-700">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-black outline-none"
+            >
+              <option>Admissions</option>
+              <option>Employee</option>
+            </select>
+          </div>
+
           <div className="rounded-xl border border-gray-400 bg-white p-4">
             <label className="block text-xs font-medium text-gray-700">Year</label>
             <select

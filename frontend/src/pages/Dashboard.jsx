@@ -38,7 +38,6 @@ ChartJS.register(
 export default function Dashboard() {
   const { logout, user } = useContext(AuthContext) || {};
   const schoolId = user?.schoolId ?? 1;
-  const canOpenBenchmark = user?.role === "admin";
 
   const {
     category,
@@ -54,6 +53,8 @@ export default function Dashboard() {
     pipelineLineData,
     genderDoughnutData,
     enrollmentBarData,
+    employeeStudentTeacherTrendData,
+    employeeCategoriesPieData,
   } = useDashboardData({ schoolId });
 
   return (
@@ -71,7 +72,6 @@ export default function Dashboard() {
           err={err}
           activityRowsCount={activityRows.length}
           enrollmentRowsCount={enrollmentRows.length}
-          canOpenBenchmark={canOpenBenchmark}
         />
         
 
@@ -84,6 +84,8 @@ export default function Dashboard() {
           pipelineLineData={pipelineLineData}
           genderDoughnutData={genderDoughnutData}
           enrollmentBarData={enrollmentBarData}
+          employeeStudentTeacherTrendData={employeeStudentTeacherTrendData}
+          employeeCategoriesPieData={employeeCategoriesPieData}
         />
 
       </main>

@@ -3,6 +3,8 @@ const router = express.Router();
 const { schoolAuthMiddleware, verifySchoolAccess } = require('../middleware/schoolAuth');
 const AdmissionActivity = require('../models/AdmissionActivity');
 const AdmissionActivityEnrollment = require('../models/AdmissionActivityEnrollment');
+const EmployeePersonnel = require('../models/EmployeePersonnel');
+const EmployeeAdminSupport = require('../models/EmployeeAdminSupport');
 const School = require('../models/School');
 
 // ===== ADMISSION ACTIVITY ROUTES =====
@@ -475,6 +477,7 @@ router.get('/stats/peer-comparison', schoolAuthMiddleware, async (req, res) => {
     const schoolYearId = Number(req.query.schoolYearId);
     const yearFilter = Number.isFinite(schoolYearId) ? { SCHOOL_YR_ID: schoolYearId } : {};
     const userSchoolId = toSchoolId(req.userSchoolId);
+    const category = req.query.category === 'Employee' ? 'Employee' : 'Admissions';
 
     if (!Number.isFinite(userSchoolId)) {
       return res.status(400).json({ message: 'Invalid school identity in auth token' });
@@ -482,40 +485,156 @@ router.get('/stats/peer-comparison', schoolAuthMiddleware, async (req, res) => {
 
     const peerGroup = normalizePeerGroup(req.query.peerGroup);
 
-    // Query activity data for applications, acceptances, and enrollments
-    const activityAgg = await AdmissionActivity.aggregate([
-      { $match: yearFilter },
-      {
-        $group: {
-          _id: '$SCHOOL_ID',
-          applications: { $sum: { $ifNull: ['$COMPLETED_APPLICATION_TOTAL', 0] } },
-          acceptances: { $sum: { $ifNull: ['$ACCEPTANCES_TOTAL', 0] } },
-          enrollments: { $sum: { $ifNull: ['$NEW_ENROLLMENTS_TOTAL', 0] } },
-          capacity: { $sum: { $ifNull: ['$CAPACITY_ENROLL', 0] } },
-          contractedBoys: { $sum: { $ifNull: ['$CONTRACTED_ENROLL_BOYS', 0] } },
-          contractedGirls: { $sum: { $ifNull: ['$CONTRACTED_ENROLL_GIRLS', 0] } },
-        },
-      },
-    ]);
-
     const totalsBySchool = new Map();
 
-    for (const row of activityAgg) {
-      const schoolId = toSchoolId(row?._id);
-      if (!Number.isFinite(schoolId)) continue;
-      totalsBySchool.set(schoolId, {
-        applications: toFiniteNumber(row.applications),
-        acceptances: toFiniteNumber(row.acceptances),
-        enrollments: toFiniteNumber(row.enrollments),
-        capacity: toFiniteNumber(row.capacity),
-        contractedEnroll: toFiniteNumber(row.contractedBoys) + toFiniteNumber(row.contractedGirls),
-      });
+    if (category === 'Employee') {
+      const personnelAgg = await EmployeePersonnel.aggregate([
+        { $match: yearFilter },
+        {
+          $group: {
+            _id: '$SCHOOL_ID',
+            totalEmployees: { $sum: { $ifNull: ['$TOTAL_EMPLOYEES', 0] } },
+            fullTimeEmployees: { $sum: { $ifNull: ['$FT_EMPLOYEES', 0] } },
+            subcontractFTE: { $sum: { $ifNull: ['$SUBCONTRACT_FTE', 0] } },
+          },
+        },
+      ]);
+
+      const teacherAgg = await EmployeePersonnel.aggregate([
+        { $match: { ...yearFilter, EMP_CAT_CD: { $in: ['EMPCAT_T', 'EMPCAT_TS'] } } },
+        {
+          $group: {
+            _id: '$SCHOOL_ID',
+            teacherCount: { $sum: { $ifNull: ['$FT_EMPLOYEES', 0] } },
+          },
+        },
+      ]);
+
+      const adminSupportAgg = await EmployeeAdminSupport.aggregate([
+        { $match: yearFilter },
+        {
+          $group: {
+            _id: '$SCHOOL_ID',
+            exemptCount: { $sum: { $ifNull: ['$NR_EXEMPT', 0] } },
+            nonExemptCount: { $sum: { $ifNull: ['$NR_NONEXEMPT', 0] } },
+          },
+        },
+      ]);
+
+      for (const row of personnelAgg) {
+        const schoolId = toSchoolId(row?._id);
+        if (!Number.isFinite(schoolId)) continue;
+        totalsBySchool.set(schoolId, {
+          totalEmployees: toFiniteNumber(row.totalEmployees),
+          fullTimeEmployees: toFiniteNumber(row.fullTimeEmployees),
+          subcontractFTE: toFiniteNumber(row.subcontractFTE),
+          teacherCount: 0,
+          exemptCount: 0,
+          nonExemptCount: 0,
+        });
+      }
+
+      for (const row of teacherAgg) {
+        const schoolId = toSchoolId(row?._id);
+        if (!Number.isFinite(schoolId)) continue;
+        const existing = totalsBySchool.get(schoolId) ?? {
+          totalEmployees: 0,
+          fullTimeEmployees: 0,
+          subcontractFTE: 0,
+          teacherCount: 0,
+          exemptCount: 0,
+          nonExemptCount: 0,
+        };
+        totalsBySchool.set(schoolId, {
+          ...existing,
+          teacherCount: toFiniteNumber(row.teacherCount),
+        });
+      }
+
+      for (const row of adminSupportAgg) {
+        const schoolId = toSchoolId(row?._id);
+        if (!Number.isFinite(schoolId)) continue;
+        const existing = totalsBySchool.get(schoolId) ?? {
+          totalEmployees: 0,
+          fullTimeEmployees: 0,
+          subcontractFTE: 0,
+          teacherCount: 0,
+          exemptCount: 0,
+          nonExemptCount: 0,
+        };
+        totalsBySchool.set(schoolId, {
+          ...existing,
+          exemptCount: toFiniteNumber(row.exemptCount),
+          nonExemptCount: toFiniteNumber(row.nonExemptCount),
+        });
+      }
+    } else {
+      const activityAgg = await AdmissionActivity.aggregate([
+        { $match: yearFilter },
+        {
+          $group: {
+            _id: '$SCHOOL_ID',
+            applications: { $sum: { $ifNull: ['$COMPLETED_APPLICATION_TOTAL', 0] } },
+            acceptances: { $sum: { $ifNull: ['$ACCEPTANCES_TOTAL', 0] } },
+            enrollments: { $sum: { $ifNull: ['$NEW_ENROLLMENTS_TOTAL', 0] } },
+            capacity: { $sum: { $ifNull: ['$CAPACITY_ENROLL', 0] } },
+            contractedBoys: { $sum: { $ifNull: ['$CONTRACTED_ENROLL_BOYS', 0] } },
+            contractedGirls: { $sum: { $ifNull: ['$CONTRACTED_ENROLL_GIRLS', 0] } },
+          },
+        },
+      ]);
+
+      for (const row of activityAgg) {
+        const schoolId = toSchoolId(row?._id);
+        if (!Number.isFinite(schoolId)) continue;
+        totalsBySchool.set(schoolId, {
+          applications: toFiniteNumber(row.applications),
+          acceptances: toFiniteNumber(row.acceptances),
+          enrollments: toFiniteNumber(row.enrollments),
+          capacity: toFiniteNumber(row.capacity),
+          contractedEnroll: toFiniteNumber(row.contractedBoys) + toFiniteNumber(row.contractedGirls),
+        });
+      }
     }
 
-    const allSchoolSummaries = Array.from(totalsBySchool.entries()).map(([schoolId]) =>
-      schoolSummaryFromTotals(totalsBySchool, schoolId)
-    );
+    const allSchoolSummaries = Array.from(totalsBySchool.entries()).map(([schoolId]) => {
+      if (category === 'Employee') {
+        const item = totalsBySchool.get(schoolId) ?? {};
+        const totalEmployees = toFiniteNumber(item.totalEmployees);
+        const fullTimeEmployees = toFiniteNumber(item.fullTimeEmployees);
+        const subcontractFTE = toFiniteNumber(item.subcontractFTE);
+        const teacherCount = toFiniteNumber(item.teacherCount);
+        const exemptCount = toFiniteNumber(item.exemptCount);
+        const nonExemptCount = toFiniteNumber(item.nonExemptCount);
+        return {
+          schoolId,
+          totalEmployees,
+          fullTimeEmployees,
+          subcontractFTE,
+          teacherCount,
+          exemptCount,
+          nonExemptCount,
+          fullTimeRate: safeRate(fullTimeEmployees, totalEmployees),
+          exemptRate: safeRate(exemptCount, exemptCount + nonExemptCount),
+        };
+      }
+
+      return schoolSummaryFromTotals(totalsBySchool, schoolId);
+    });
     const yourSchool = schoolSummaryFromTotals(totalsBySchool, userSchoolId);
+    const yourSchoolEmployee = category === 'Employee'
+      ? (allSchoolSummaries.find((entry) => entry.schoolId === userSchoolId) ?? {
+          schoolId: userSchoolId,
+          totalEmployees: 0,
+          fullTimeEmployees: 0,
+          subcontractFTE: 0,
+          teacherCount: 0,
+          exemptCount: 0,
+          nonExemptCount: 0,
+          fullTimeRate: null,
+          exemptRate: null,
+        })
+      : null;
 
     const peerCandidates = allSchoolSummaries.filter((entry) => entry.schoolId !== userSchoolId);
 
@@ -567,9 +686,97 @@ router.get('/stats/peer-comparison', schoolAuthMiddleware, async (req, res) => {
     }
 
     const redacted = peerSchools.length < MIN_PEER_SCHOOLS;
-    const peerAverage = redacted ? aggregateMetrics([]) : aggregateMetrics(peerSchools);
+    const peerAverage = category === 'Employee'
+      ? (() => {
+          if (redacted || peerSchools.length === 0) {
+            return {
+              totalEmployees: null,
+              fullTimeEmployees: null,
+              subcontractFTE: null,
+              teacherCount: null,
+              exemptCount: null,
+              nonExemptCount: null,
+              fullTimeRate: null,
+              exemptRate: null,
+            };
+          }
+
+          const count = peerSchools.length;
+          const sums = peerSchools.reduce(
+            (acc, item) => {
+              acc.totalEmployees += toFiniteNumber(item.totalEmployees);
+              acc.fullTimeEmployees += toFiniteNumber(item.fullTimeEmployees);
+              acc.subcontractFTE += toFiniteNumber(item.subcontractFTE);
+              acc.teacherCount += toFiniteNumber(item.teacherCount);
+              acc.exemptCount += toFiniteNumber(item.exemptCount);
+              acc.nonExemptCount += toFiniteNumber(item.nonExemptCount);
+              return acc;
+            },
+            { totalEmployees: 0, fullTimeEmployees: 0, subcontractFTE: 0, teacherCount: 0, exemptCount: 0, nonExemptCount: 0 }
+          );
+
+          const totalEmployees = sums.totalEmployees / count;
+          const fullTimeEmployees = sums.fullTimeEmployees / count;
+          const subcontractFTE = sums.subcontractFTE / count;
+          const teacherCount = sums.teacherCount / count;
+          const exemptCount = sums.exemptCount / count;
+          const nonExemptCount = sums.nonExemptCount / count;
+
+          return {
+            totalEmployees,
+            fullTimeEmployees,
+            subcontractFTE,
+            teacherCount,
+            exemptCount,
+            nonExemptCount,
+            fullTimeRate: safeRate(fullTimeEmployees, totalEmployees),
+            exemptRate: safeRate(exemptCount, exemptCount + nonExemptCount),
+          };
+        })()
+      : (redacted ? aggregateMetrics([]) : aggregateMetrics(peerSchools));
+
+    if (category === 'Employee') {
+      return res.json({
+        category,
+        schoolYearId: Number.isFinite(schoolYearId) ? schoolYearId : null,
+        peerGroup,
+        peerGroupLabel: peerGroupLabel(peerGroup),
+        peerSchoolCount: peerSchools.length,
+        privacy: {
+          minimumPeerSchools: MIN_PEER_SCHOOLS,
+          isRedacted: redacted,
+        },
+        yourSchool: {
+          totalEmployees: yourSchoolEmployee.totalEmployees,
+          fullTimeEmployees: yourSchoolEmployee.fullTimeEmployees,
+          subcontractFTE: yourSchoolEmployee.subcontractFTE,
+          teacherCount: yourSchoolEmployee.teacherCount,
+          exemptCount: yourSchoolEmployee.exemptCount,
+          nonExemptCount: yourSchoolEmployee.nonExemptCount,
+          fullTimeRate: yourSchoolEmployee.fullTimeRate,
+          exemptRate: yourSchoolEmployee.exemptRate,
+        },
+        peerAverage,
+        comparison: redacted
+          ? null
+          : {
+              totalEmployeesDiff: (yourSchoolEmployee.totalEmployees ?? 0) - (peerAverage.totalEmployees ?? 0),
+              fullTimeRateDiff: (yourSchoolEmployee.fullTimeRate ?? 0) - (peerAverage.fullTimeRate ?? 0),
+              exemptRateDiff: (yourSchoolEmployee.exemptRate ?? 0) - (peerAverage.exemptRate ?? 0),
+              subcontractFTEDiff: (yourSchoolEmployee.subcontractFTE ?? 0) - (peerAverage.subcontractFTE ?? 0),
+            },
+        peerFilterContext: {
+          regionCd: userRegionCd || null,
+          groupCd: userGroupCd || null,
+        },
+        message: redacted
+          ? `${peerFilterWarning ? `${peerFilterWarning} ` : ''}Peer group has fewer than ${MIN_PEER_SCHOOLS} schools. Aggregated peer metrics are hidden for privacy.`
+          : 'Comparison includes only aggregated peer averages. Individual peer school identities and raw records are hidden.',
+      });
+    }
 
     res.json({
+      category,
       schoolYearId: Number.isFinite(schoolYearId) ? schoolYearId : null,
       peerGroup,
       peerGroupLabel: peerGroupLabel(peerGroup),
