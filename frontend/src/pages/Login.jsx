@@ -8,7 +8,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const [loginType, setLoginType] = useState("school"); // school maps to teacher/student
+  const [loginType, setLoginType] = useState("school"); // school maps to teacher
 
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
@@ -30,7 +30,7 @@ const Login = () => {
       const userRole = response.data.user.role;
 
       if (userRole !== loginType) {
-        setError(`This account is not registered as a ${loginType === 'admin' ? 'admin' : 'teacher/student'} user.`);
+        setError(`This account is not registered as a ${loginType === 'admin' ? 'admin' : 'teacher'} user.`);
         setLoading(false);
         return;
       }
@@ -53,11 +53,11 @@ const Login = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-white px-4">
       <div className="w-full max-w-md rounded-xl bg-gray-100 p-10 shadow-2xl">
-        <h1 className="mb-6 text-center text-3xl font-semibold text-black">{loginType === "admin" ? "Admin Login" : "Teacher/Student Login"}</h1>
+        <h1 className="mb-6 text-center text-3xl font-semibold text-black">{loginType === "admin" ? "Admin Login" : "Teacher Login"}</h1>
         <div className="mb-6 flex justify-center gap-4">
           <button type="button"
             onClick={() => setLoginType("school")}
-            className={`px-2 py-2 rounded-md ${loginType === "school" ? "bg-black text-white" : "bg-gray-300 text-black"}`}>Teacher/Student</button>
+            className={`px-2 py-2 rounded-md ${loginType === "school" ? "bg-black text-white" : "bg-gray-300 text-black"}`}>Teacher</button>
 
           <button type="button"
             onClick={() => setLoginType("admin")}
