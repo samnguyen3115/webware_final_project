@@ -23,14 +23,30 @@ const FIELDS = [
 const normalize = (s) =>
     (s || "")
         .toLowerCase()
-        .replace(/[^\w\s.%]/g, " ")
+        // keep commas and hyphens (useful for numbers like 10,000 or -12)
+        .replace(/[^\w\s.%,-]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
 
 function parseNumber(raw) {
-    const cleaned = normalize(raw).replace("%", "").trim();
+    if (raw == null) return null;
+
+    // work off the raw text first (before normalize can mess with digit grouping)
+    let s = String(raw).toLowerCase();
+
+    // remove thousands separators: 10,000 -> 10000
+    s = s.replace(/(?<=\d),(?=\d)/g, "");
+
+    // normalize after comma fix
+    const cleaned = normalize(s).replace("%", "").trim();
+
+    // "ten point five" -> "10.5" style utterances
     const pointFixed = cleaned.replace(/\bpoint\b/g, ".");
-    const match = pointFixed.match(/-?\d+(\.\d+)?/);
+
+    // handle cases where grouping became spaces: "10 000" -> "10000"
+    const spaceGroupedFixed = pointFixed.replace(/(\d)\s+(?=\d{3}\b)/g, "$1");
+
+    const match = spaceGroupedFixed.match(/-?\d+(\.\d+)?/);
     return match ? match[0] : null;
 }
 
@@ -75,24 +91,12 @@ export default function BenchmarkVoiceFillButton({
     formData,
     setFormData,
     validateAndShowErrors,
+    category = "Admissions",
 }) {
-    const DEBUG_VOICE = true;
-
-    const log = (...args) => {
-        if (!DEBUG_VOICE) return;
-        console.log("[VoiceFill]", ...args);
-    };
-
-    const [debugLog, setDebugLog] = useState([]);
-    const pushDebug = useCallback((line) => {
-        if (!DEBUG_VOICE) return;
-        setDebugLog((prev) => {
-            const next = [...prev, line];
-            return next.length > 250 ? next.slice(next.length - 250) : next;
-        });
-    }, [DEBUG_VOICE]);
-
     const [open, setOpen] = useState(false);
+
+    // Determine button color based on category
+    const buttonColor = category === "Admissions" ? "#0ea5e9" : "#8b5cf6"; // Blue for Admissions, Purple for Employee
     const [transcript, setTranscript] = useState("");
     const [finalTranscript, setFinalTranscript] = useState("");
     const [pendingPatch, setPendingPatch] = useState({});
@@ -101,9 +105,6 @@ export default function BenchmarkVoiceFillButton({
     const pendingEntries = useMemo(() => Object.entries(pendingPatch), [pendingPatch]);
 
     const applyPatch = useCallback(() => {
-        log("APPLY clicked. pendingPatch =", pendingPatch);
-        pushDebug(`APPLY: ${JSON.stringify(pendingPatch)}`);
-
         if (pendingEntries.length === 0) return;
 
         setHistory((h) => [...h, formData]);
@@ -114,12 +115,9 @@ export default function BenchmarkVoiceFillButton({
         setFormData(next);
         setPendingPatch({});
         if (validateAndShowErrors) validateAndShowErrors(next);
-    }, [formData, pendingEntries, pendingPatch, pushDebug, setFormData, validateAndShowErrors]);
+    }, [formData, pendingEntries, setFormData, validateAndShowErrors]);
 
     const undo = useCallback(() => {
-        log("UNDO clicked. history.length =", history.length);
-        pushDebug("UNDO");
-
         setHistory((h) => {
             if (h.length === 0) return h;
             const prev = h[h.length - 1];
@@ -129,54 +127,30 @@ export default function BenchmarkVoiceFillButton({
         });
 
         setPendingPatch({});
-    }, [history.length, pushDebug, setFormData, validateAndShowErrors]);
+    }, [setFormData, validateAndShowErrors]);
 
-    // ✅ Stable callbacks (prevents hook re-init loops)
     const onInterimText = useCallback((t) => {
         setTranscript(t);
-        log("INTERIM:", t);
-        pushDebug(`INTERIM: ${t}`);
-    }, [pushDebug]);
+    }, []);
 
     const onFinalText = useCallback((t) => {
         setFinalTranscript(t);
-        log("FINAL:", t);
-        pushDebug(`FINAL: ${t}`);
 
         const patch = parseUtteranceToPatch(t);
-        log("PARSE:", patch);
-        pushDebug(`PARSE: ${JSON.stringify(patch)}`);
-
         if (!patch) return;
 
         if (patch.__cmd === "apply") return applyPatch();
         if (patch.__cmd === "undo") return undo();
 
-        setPendingPatch((p) => {
-            const merged = { ...p, ...patch };
-            log("PENDING PATCH ->", merged);
-            pushDebug(`PENDING: ${JSON.stringify(merged)}`);
-            return merged;
-        });
-    }, [applyPatch, pushDebug, undo]);
-
-    const onDebug = useCallback((line) => {
-        // hook debug lines
-        pushDebug(`HOOK: ${line}`);
-    }, [pushDebug]);
+        setPendingPatch((p) => ({ ...p, ...patch }));
+    }, [applyPatch, undo]);
 
     const { supported, listening, start, stop } = useWebSpeech({
         onInterimText,
         onFinalText,
-        debug: DEBUG_VOICE,
-        debugLabel: "BenchmarkWebSpeech",
-        onDebug,
     });
 
-    useEffect(() => {
-        log(listening ? "LISTENING STARTED" : "LISTENING STOPPED");
-        pushDebug(listening ? "STATE: LISTENING STARTED" : "STATE: LISTENING STOPPED");
-    }, [listening, pushDebug]);
+    useEffect(() => { }, [listening]);
 
     if (!supported) return null;
 
@@ -186,7 +160,7 @@ export default function BenchmarkVoiceFillButton({
                 <div
                     style={{
                         position: "fixed",
-                        right: 20,
+                        right: 10,
                         bottom: 92,
                         width: 380,
                         background: "white",
@@ -202,8 +176,6 @@ export default function BenchmarkVoiceFillButton({
                             size={20}
                             style={{ cursor: "pointer" }}
                             onClick={() => {
-                                log("UI close -> stop()");
-                                pushDebug("UI: close -> stop()");
                                 setOpen(false);
                                 stop();
                             }}
@@ -219,7 +191,9 @@ export default function BenchmarkVoiceFillButton({
                         <div style={{ fontWeight: 700, marginBottom: 8 }}>Preview changes</div>
 
                         {pendingEntries.length === 0 ? (
-                            <div style={{ fontSize: 13, opacity: 0.8 }}>No pending changes yet. Speak a field + value.</div>
+                            <div style={{ fontSize: 13, opacity: 0.8 }}>
+                                No pending changes yet. Speak a field + value.
+                            </div>
                         ) : (
                             <div style={{ display: "grid", gap: 6 }}>
                                 {pendingEntries.map(([k, v]) => {
@@ -290,46 +264,11 @@ export default function BenchmarkVoiceFillButton({
                             cursor: "pointer",
                             fontWeight: "bold",
                             color: "white",
-                            background: listening ? "#ef4444" : "#0ea5e9",
+                            background: listening ? "#ef4444" : buttonColor,
                         }}
                     >
                         {listening ? "Stop Listening" : "Start Listening"}
                     </button>
-
-                    {DEBUG_VOICE && (
-                        <div style={{ marginTop: 12 }}>
-                            <div style={{ fontWeight: 700, marginBottom: 6 }}>Debug Log</div>
-                            <div
-                                style={{
-                                    maxHeight: 160,
-                                    overflow: "auto",
-                                    fontSize: 11,
-                                    background: "#f9fafb",
-                                    border: "1px solid #e5e7eb",
-                                    borderRadius: 10,
-                                    padding: 8,
-                                    whiteSpace: "pre-wrap",
-                                }}
-                            >
-                                {debugLog.length === 0 ? "No logs yet." : debugLog.join("\n")}
-                            </div>
-
-                            <button
-                                onClick={() => setDebugLog([])}
-                                style={{
-                                    marginTop: 8,
-                                    padding: "6px 10px",
-                                    borderRadius: 8,
-                                    border: "1px solid #e5e7eb",
-                                    background: "white",
-                                    cursor: "pointer",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                Clear Debug Log
-                            </button>
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -337,7 +276,6 @@ export default function BenchmarkVoiceFillButton({
                 onClick={() => {
                     setOpen((v) => {
                         const next = !v;
-                        pushDebug(`UI: panel ${next ? "opened" : "closed"}`);
                         if (!next) stop();
                         return next;
                     });
@@ -345,13 +283,13 @@ export default function BenchmarkVoiceFillButton({
                 title="Voice-fill Benchmark Form"
                 style={{
                     position: "fixed",
-                    right: 20,
-                    bottom: 20,
+                    right: 10,
+                    bottom: 10,
                     width: 60,
                     height: 60,
                     borderRadius: "50%",
                     border: "none",
-                    background: "#0ea5e9",
+                    background: buttonColor,
                     cursor: "pointer",
                     boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
                     display: "flex",

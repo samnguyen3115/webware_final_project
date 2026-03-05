@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const admissionActivitySchema = new mongoose.Schema({
+const employeePersonnelSchema = new mongoose.Schema({
   ID: {
     type: Number,
     required: true,
@@ -14,19 +14,39 @@ const admissionActivitySchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  CAPACITY_ENROLL: {
+  EMP_CAT_CD: {
+    type: String,
+    default: ''
+  },
+  SUBCONTRACT_NUM: {
     type: Number,
     default: 0
   },
-  CONTRACTED_ENROLL_BOYS: {
+  SUBCONTRACT_FTE: {
     type: Number,
     default: 0
   },
-  CONTRACTED_ENROLL_GIRLS: {
+  FTE_ONLY_NUM: {
     type: Number,
     default: 0
   },
-  GRADE_DEF_ID: {
+  FTE_ONLY_SALARY_MIN: {
+    type: Number,
+    default: 0
+  },
+  FTE_ONLY_SALARY_MAX: {
+    type: Number,
+    default: 0
+  },
+  TOTAL_EMPLOYEES: {
+    type: Number,
+    default: 0
+  },
+  FT_EMPLOYEES: {
+    type: Number,
+    default: 0
+  },
+  POC_EMPLOYEES: {
     type: Number,
     default: 0
   },
@@ -42,26 +62,10 @@ const admissionActivitySchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  CONTRACTED_ENROLL_NB: {
-    type: Number,
-    default: 0
-  },
-  COMPLETED_APPLICATION_TOTAL: {
-    type: Number,
-    default: 0
-  },
-  ACCEPTANCES_TOTAL: {
-    type: Number,
-    default: 0
-  },
-  NEW_ENROLLMENTS_TOTAL: {
-    type: Number,
-    default: 0
-  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-module.exports = mongoose.model('AdmissionActivity', admissionActivitySchema, 'admissionactivities');
+module.exports = mongoose.model('EmployeePersonnel', employeePersonnelSchema, 'employeepersonnels');

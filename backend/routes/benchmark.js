@@ -66,6 +66,8 @@ router.post("/", auth, async (req, res) => {
 
     payload.ID = lastRecord ? +lastRecord.ID + 1 : 1;
 
+    console.log(payload)
+
     const benchmark = new Benchmark(payload);
     await benchmark.save();
     res.status(201).json({ message: "Saved successfully", benchmark });

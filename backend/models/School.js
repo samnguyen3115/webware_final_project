@@ -11,6 +11,14 @@ const schoolSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  GROUP_CD: {
+    type: String,
+    default: null
+  },
+  REGION_CD: {
+    type: String,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

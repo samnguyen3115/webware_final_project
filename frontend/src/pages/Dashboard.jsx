@@ -1,7 +1,6 @@
 // src/pages/Dashboard.jsx
 import React, { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { Link } from "react-router-dom";
 import "../App.css";
 
 import {
@@ -39,7 +38,7 @@ ChartJS.register(
 export default function Dashboard() {
   const { logout, user } = useContext(AuthContext) || {};
   const schoolId = user?.schoolId ?? 1;
-  const canOpenBenchmark = user?.role === "admin";
+  const isAdmin = user?.role === "admin";
 
   const {
     category,
@@ -55,13 +54,15 @@ export default function Dashboard() {
     pipelineLineData,
     genderDoughnutData,
     enrollmentBarData,
+    employeeStudentTeacherTrendData,
+    employeeCategoriesPieData,
   } = useDashboardData({ schoolId });
 
   return (
     <div className="min-h-screen bg-white text-black">
-      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} />
+      <DashboardHeader schoolId={schoolId} schoolYearId={schoolYearId} onLogout={logout} isAdmin={isAdmin} userRole={user?.role} />
 
-      <main className="mx-auto px-4 py-6">
+      <main className="mx-auto px-20 py-6">
         <DashboardControls
           category={category}
           setCategory={setCategory}
@@ -72,11 +73,10 @@ export default function Dashboard() {
           err={err}
           activityRowsCount={activityRows.length}
           enrollmentRowsCount={enrollmentRows.length}
-          canOpenBenchmark={canOpenBenchmark}
         />
-        
 
-       
+
+
 
         <KpiCards kpis={kpis} />
 
@@ -85,6 +85,8 @@ export default function Dashboard() {
           pipelineLineData={pipelineLineData}
           genderDoughnutData={genderDoughnutData}
           enrollmentBarData={enrollmentBarData}
+          employeeStudentTeacherTrendData={employeeStudentTeacherTrendData}
+          employeeCategoriesPieData={employeeCategoriesPieData}
         />
 
       </main>
