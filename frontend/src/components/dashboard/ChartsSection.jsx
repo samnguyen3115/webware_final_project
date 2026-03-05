@@ -58,6 +58,7 @@ export default function ChartsSection({
                             <Doughnut data={genderDoughnutData} options={doughnutOptions} />
                         </div>
                     </div>
+
                 </>
             ) : (
                 <div className="rounded-2xl border border-gray-400 bg-white p-4 lg:col-span-2">

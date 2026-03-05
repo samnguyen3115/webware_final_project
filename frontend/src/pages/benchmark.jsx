@@ -11,7 +11,7 @@ export default function Benchmark() {
 
   return (
     <div className="min-h-screen bg-white text-black">
-      <DashboardHeader schoolId={schoolId} onLogout={logout} />
+      <DashboardHeader schoolId={schoolId} onLogout={logout} userRole={user?.role} />
 
       <main className="mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">Benchmark Form</h1>

@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { schoolAuthMiddleware, verifySchoolAccess } = require('../middleware/schoolAuth');
 const AdmissionActivity = require('../models/AdmissionActivity');
-const AdmissionActivitySOC = require('../models/AdmissionActivitySOC');
 const AdmissionActivityEnrollment = require('../models/AdmissionActivityEnrollment');
+const School = require('../models/School');
 
 // ===== ADMISSION ACTIVITY ROUTES =====
 
@@ -111,7 +111,7 @@ router.delete('/activity/:id', schoolAuthMiddleware, async (req, res) => {
 
 // ===== ADMISSION ACTIVITY SOC ROUTES =====
 
-// Create new admission activity SOC
+// Create new admission activity SOC (merged with AdmissionActivity)
 router.post('/activity-soc', schoolAuthMiddleware, async (req, res) => {
   try {
     const { ID, SCHOOL_ID, SCHOOL_YR_ID, ...rest } = req.body;
@@ -125,7 +125,7 @@ router.post('/activity-soc', schoolAuthMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Access denied: Cannot create data for another school' });
     }
 
-    const admissionSOC = new AdmissionActivitySOC({
+    const admissionSOC = new AdmissionActivity({
       ID,
       SCHOOL_ID: req.userSchoolId,
       SCHOOL_YR_ID,
@@ -139,20 +139,20 @@ router.post('/activity-soc', schoolAuthMiddleware, async (req, res) => {
   }
 });
 
-// Get all admission activities SOC for user's school only
+// Get all admission activities SOC for user's school only (merged with AdmissionActivity)
 router.get('/activity-soc', schoolAuthMiddleware, async (req, res) => {
   try {
-    const admissionsSOC = await AdmissionActivitySOC.find({ SCHOOL_ID: req.userSchoolId });
+    const admissionsSOC = await AdmissionActivity.find({ SCHOOL_ID: req.userSchoolId });
     res.json(admissionsSOC);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching admission activities SOC', error: err.message });
   }
 });
 
-// Get admission activity SOC by ID (with authorization check)
+// Get admission activity SOC by ID (with authorization check) (merged with AdmissionActivity)
 router.get('/activity-soc/:id', schoolAuthMiddleware, async (req, res) => {
   try {
-    const admissionSOC = await AdmissionActivitySOC.findById(req.params.id);
+    const admissionSOC = await AdmissionActivity.findById(req.params.id);
     if (!admissionSOC) {
       return res.status(404).json({ message: 'Admission activity SOC not found' });
     }
@@ -168,10 +168,10 @@ router.get('/activity-soc/:id', schoolAuthMiddleware, async (req, res) => {
   }
 });
 
-// Update admission activity SOC (with authorization check)
+// Update admission activity SOC (with authorization check) (merged with AdmissionActivity)
 router.put('/activity-soc/:id', schoolAuthMiddleware, async (req, res) => {
   try {
-    const admissionSOC = await AdmissionActivitySOC.findById(req.params.id);
+    const admissionSOC = await AdmissionActivity.findById(req.params.id);
     if (!admissionSOC) {
       return res.status(404).json({ message: 'Admission activity SOC not found' });
     }
@@ -181,7 +181,7 @@ router.put('/activity-soc/:id', schoolAuthMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Access denied: You cannot modify this school\'s data' });
     }
 
-    const updatedSOC = await AdmissionActivitySOC.findByIdAndUpdate(
+    const updatedSOC = await AdmissionActivity.findByIdAndUpdate(
       req.params.id,
       { ...req.body },
       { new: true }
@@ -193,10 +193,10 @@ router.put('/activity-soc/:id', schoolAuthMiddleware, async (req, res) => {
   }
 });
 
-// Delete admission activity SOC (with authorization check)
+// Delete admission activity SOC (with authorization check) (merged with AdmissionActivity)
 router.delete('/activity-soc/:id', schoolAuthMiddleware, async (req, res) => {
   try {
-    const admissionSOC = await AdmissionActivitySOC.findById(req.params.id);
+    const admissionSOC = await AdmissionActivity.findById(req.params.id);
     if (!admissionSOC) {
       return res.status(404).json({ message: 'Admission activity SOC not found' });
     }
@@ -206,7 +206,7 @@ router.delete('/activity-soc/:id', schoolAuthMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Access denied: You cannot delete this school\'s data' });
     }
 
-    await AdmissionActivitySOC.findByIdAndDelete(req.params.id);
+    await AdmissionActivity.findByIdAndDelete(req.params.id);
     res.json({ message: 'Admission activity SOC deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting admission activity SOC', error: err.message });
@@ -353,97 +353,259 @@ router.get('/stats/admission', schoolAuthMiddleware, async (req, res) => {
 
 // ===== PEER GROUP COMPARISON ROUTES =====
 
-/**
- * Get peer group aggregated statistics without revealing individual school identities
- * Returns only aggregated metrics (averages, medians, etc.)
- * User CANNOT see individual school IDs or raw data
- */
-router.get('/stats/peer-group', schoolAuthMiddleware, async (req, res) => {
-  try {
-    const { schoolYearId } = req.query;
-    
-    // Fetch all schools EXCEPT the user's school
-    const peerActivities = await AdmissionActivity.find({
-      schoolId: { $ne: req.userSchoolId },
-      ...(schoolYearId && { schoolYearId })
-    });
+const MIN_PEER_SCHOOLS = 3;
 
-    if (peerActivities.length === 0) {
-      return res.json({
-        totalPeerSchools: 0,
-        aggregatedMetrics: null,
-        message: 'No peer schools found for comparison'
+function toFiniteNumber(value) {
+  return Number.isFinite(value) ? value : 0;
+}
+
+function safeRate(numerator, denominator) {
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator <= 0) {
+    return null;
+  }
+  return numerator / denominator;
+}
+
+function toSchoolId(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizePeerGroup(peerGroup) {
+  const allowed = new Set([
+    'all_schools',
+    'region_cd',
+    'group_cd',
+  ]);
+  if (!allowed.has(peerGroup)) return 'all_schools';
+  return peerGroup;
+}
+
+function peerGroupLabel(peerGroup) {
+  switch (peerGroup) {
+    case 'all_schools':
+      return 'All Schools';
+    case 'region_cd':
+      return 'Same Region (REGION_CD)';
+    case 'group_cd':
+      return 'Same Group (GROUP_CD)';
+    default:
+      return 'All Schools';
+  }
+}
+
+function aggregateMetrics(summaries) {
+  if (!Array.isArray(summaries) || summaries.length === 0) {
+    return {
+      applications: null,
+      acceptances: null,
+      enrollments: null,
+      capacity: null,
+      acceptanceRate: null,
+      yieldRate: null,
+      fillRate: null,
+    };
+  }
+
+  const total = summaries.reduce(
+    (acc, item) => {
+      acc.applications += toFiniteNumber(item.applications);
+      acc.acceptances += toFiniteNumber(item.acceptances);
+      acc.enrollments += toFiniteNumber(item.enrollments);
+      acc.capacity += toFiniteNumber(item.capacity);
+      return acc;
+    },
+    { applications: 0, acceptances: 0, enrollments: 0, capacity: 0 }
+  );
+
+  const count = summaries.length;
+  const avgApplications = total.applications / count;
+  const avgAcceptances = total.acceptances / count;
+  const avgEnrollments = total.enrollments / count;
+  const avgCapacity = total.capacity / count;
+
+  return {
+    applications: avgApplications,
+    acceptances: avgAcceptances,
+    enrollments: avgEnrollments,
+    capacity: avgCapacity,
+    acceptanceRate: safeRate(avgAcceptances, avgApplications),
+    yieldRate: safeRate(avgEnrollments, avgAcceptances),
+    fillRate: safeRate(avgEnrollments, avgCapacity),
+  };
+}
+
+function schoolSummaryFromTotals(totalsBySchool, schoolId) {
+  const item = totalsBySchool.get(schoolId) ?? { 
+    applications: 0, 
+    acceptances: 0, 
+    enrollments: 0, 
+    capacity: 0,
+    contractedEnroll: 0,
+  };
+  const applications = toFiniteNumber(item.applications);
+  const acceptances = toFiniteNumber(item.acceptances);
+  const enrollments = toFiniteNumber(item.enrollments);
+  const capacity = toFiniteNumber(item.capacity);
+  const contractedEnroll = toFiniteNumber(item.contractedEnroll);
+
+  return {
+    schoolId,
+    applications,
+    acceptances,
+    enrollments,
+    capacity,
+    contractedEnroll,
+    acceptanceRate: safeRate(acceptances, applications),
+    yieldRate: safeRate(enrollments, acceptances),
+    fillRate: safeRate(contractedEnroll, capacity),
+  };
+}
+
+router.get('/stats/peer-groups', schoolAuthMiddleware, async (req, res) => {
+  res.json([
+    { key: 'all_schools', label: 'All Schools' },
+    { key: 'region_cd', label: 'Same REGION_CD' },
+    { key: 'group_cd', label: 'Same GROUP_CD' },
+  ]);
+});
+
+router.get('/stats/peer-comparison', schoolAuthMiddleware, async (req, res) => {
+  try {
+    const schoolYearId = Number(req.query.schoolYearId);
+    const yearFilter = Number.isFinite(schoolYearId) ? { SCHOOL_YR_ID: schoolYearId } : {};
+    const userSchoolId = toSchoolId(req.userSchoolId);
+
+    if (!Number.isFinite(userSchoolId)) {
+      return res.status(400).json({ message: 'Invalid school identity in auth token' });
+    }
+
+    const peerGroup = normalizePeerGroup(req.query.peerGroup);
+
+    // Query activity data for applications, acceptances, and enrollments
+    const activityAgg = await AdmissionActivity.aggregate([
+      { $match: yearFilter },
+      {
+        $group: {
+          _id: '$SCHOOL_ID',
+          applications: { $sum: { $ifNull: ['$COMPLETED_APPLICATION_TOTAL', 0] } },
+          acceptances: { $sum: { $ifNull: ['$ACCEPTANCES_TOTAL', 0] } },
+          enrollments: { $sum: { $ifNull: ['$NEW_ENROLLMENTS_TOTAL', 0] } },
+          capacity: { $sum: { $ifNull: ['$CAPACITY_ENROLL', 0] } },
+          contractedBoys: { $sum: { $ifNull: ['$CONTRACTED_ENROLL_BOYS', 0] } },
+          contractedGirls: { $sum: { $ifNull: ['$CONTRACTED_ENROLL_GIRLS', 0] } },
+        },
+      },
+    ]);
+
+    const totalsBySchool = new Map();
+
+    for (const row of activityAgg) {
+      const schoolId = toSchoolId(row?._id);
+      if (!Number.isFinite(schoolId)) continue;
+      totalsBySchool.set(schoolId, {
+        applications: toFiniteNumber(row.applications),
+        acceptances: toFiniteNumber(row.acceptances),
+        enrollments: toFiniteNumber(row.enrollments),
+        capacity: toFiniteNumber(row.capacity),
+        contractedEnroll: toFiniteNumber(row.contractedBoys) + toFiniteNumber(row.contractedGirls),
       });
     }
 
-    // Calculate aggregated metrics WITHOUT revealing individual school data
-    const totalApplications = peerActivities.length;
-    const acceptedCount = peerActivities.filter(a => a.status === 'Accepted').length;
-    const avgGpa = (peerActivities.reduce((sum, a) => sum + (a.gpa || 0), 0) / totalApplications).toFixed(2);
-    const avgTestScore = (peerActivities.reduce((sum, a) => sum + (a.testScore || 0), 0) / totalApplications).toFixed(2);
+    const allSchoolSummaries = Array.from(totalsBySchool.entries()).map(([schoolId]) =>
+      schoolSummaryFromTotals(totalsBySchool, schoolId)
+    );
+    const yourSchool = schoolSummaryFromTotals(totalsBySchool, userSchoolId);
+
+    const peerCandidates = allSchoolSummaries.filter((entry) => entry.schoolId !== userSchoolId);
+
+    const schoolIds = allSchoolSummaries.map((entry) => entry.schoolId);
+    if (!schoolIds.includes(userSchoolId)) {
+      schoolIds.push(userSchoolId);
+    }
+
+    const schoolMetaRows = await School.find(
+      { ID: { $in: schoolIds } },
+      { ID: 1, GROUP_CD: 1, REGION_CD: 1 }
+    ).lean();
+
+    const schoolMetaById = new Map(
+      schoolMetaRows
+        .map((row) => [toSchoolId(row?.ID), row])
+        .filter(([schoolId]) => Number.isFinite(schoolId))
+    );
+
+    const userSchoolMeta = schoolMetaById.get(userSchoolId) ?? null;
+    const userRegionCd = (userSchoolMeta?.REGION_CD ?? '').trim();
+    const userGroupCd = (userSchoolMeta?.GROUP_CD ?? '').trim();
+
+    let peerSchools = peerCandidates;
+    let peerFilterWarning = null;
+
+    if (peerGroup === 'region_cd') {
+      if (!userRegionCd) {
+        peerSchools = [];
+        peerFilterWarning = 'Your school has no REGION_CD value.';
+      } else {
+        peerSchools = peerCandidates.filter((entry) => {
+          const peerMeta = schoolMetaById.get(entry.schoolId);
+          const peerRegion = (peerMeta?.REGION_CD ?? '').trim();
+          return peerRegion && peerRegion === userRegionCd;
+        });
+      }
+    } else if (peerGroup === 'group_cd') {
+      if (!userGroupCd) {
+        peerSchools = [];
+        peerFilterWarning = 'Your school has no GROUP_CD value.';
+      } else {
+        peerSchools = peerCandidates.filter((entry) => {
+          const peerMeta = schoolMetaById.get(entry.schoolId);
+          const peerGroupCd = (peerMeta?.GROUP_CD ?? '').trim();
+          return peerGroupCd && peerGroupCd === userGroupCd;
+        });
+      }
+    }
+
+    const redacted = peerSchools.length < MIN_PEER_SCHOOLS;
+    const peerAverage = redacted ? aggregateMetrics([]) : aggregateMetrics(peerSchools);
 
     res.json({
-      totalPeerSchools: new Set(peerActivities.map(a => a.schoolId.toString())).size,
-      aggregatedMetrics: {
-        averageAcceptanceRate: ((acceptedCount / totalApplications) * 100).toFixed(2),
-        averageGPA: avgGpa,
-        averageTestScore: avgTestScore,
-        totalApplicationsInPeerGroup: totalApplications
+      schoolYearId: Number.isFinite(schoolYearId) ? schoolYearId : null,
+      peerGroup,
+      peerGroupLabel: peerGroupLabel(peerGroup),
+      peerSchoolCount: peerSchools.length,
+      privacy: {
+        minimumPeerSchools: MIN_PEER_SCHOOLS,
+        isRedacted: redacted,
       },
-      message: 'Peer group aggregated metrics (individual school data hidden)'
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching peer group statistics', error: err.message });
-  }
-});
-
-/**
- * Get comparison between user's school and peer group
- * Shows user's metrics vs. peer averages
- */
-router.get('/stats/comparison', schoolAuthMiddleware, async (req, res) => {
-  try {
-    const { schoolYearId } = req.query;
-
-    // Get user's school stats
-    const userStats = {
-      totalApplications: await AdmissionActivity.countDocuments({ 
-        schoolId: req.userSchoolId,
-        ...(schoolYearId && { schoolYearId })
-      }),
-      acceptedCount: await AdmissionActivity.countDocuments({ 
-        schoolId: req.userSchoolId,
-        status: 'Accepted',
-        ...(schoolYearId && { schoolYearId })
-      })
-    };
-
-    // Get peer group stats
-    const peerActivities = await AdmissionActivity.find({
-      schoolId: { $ne: req.userSchoolId },
-      ...(schoolYearId && { schoolYearId })
-    });
-
-    const peerStats = {
-      averageAcceptanceRate: peerActivities.length > 0 
-        ? ((peerActivities.filter(a => a.status === 'Accepted').length / peerActivities.length) * 100).toFixed(2)
-        : 0,
-      averageGPA: peerActivities.length > 0
-        ? (peerActivities.reduce((sum, a) => sum + (a.gpa || 0), 0) / peerActivities.length).toFixed(2)
-        : 0
-    };
-
-    res.json({
       yourSchool: {
-        acceptanceRate: userStats.totalApplications > 0 
-          ? ((userStats.acceptedCount / userStats.totalApplications) * 100).toFixed(2)
-          : 0
+        applications: yourSchool.applications,
+        acceptances: yourSchool.acceptances,
+        enrollments: yourSchool.enrollments,
+        capacity: yourSchool.capacity,
+        acceptanceRate: yourSchool.acceptanceRate,
+        yieldRate: yourSchool.yieldRate,
+        fillRate: yourSchool.fillRate,
       },
-      peerGroupAverages: peerStats,
-      comparisonNote: 'Individual peer school data is hidden for privacy'
+      peerAverage,
+      comparison: redacted
+        ? null
+        : {
+            acceptanceRateDiff: (yourSchool.acceptanceRate ?? 0) - (peerAverage.acceptanceRate ?? 0),
+            yieldRateDiff: (yourSchool.yieldRate ?? 0) - (peerAverage.yieldRate ?? 0),
+            fillRateDiff: (yourSchool.fillRate ?? 0) - (peerAverage.fillRate ?? 0),
+            enrollmentDiff: (yourSchool.enrollments ?? 0) - (peerAverage.enrollments ?? 0),
+          },
+      peerFilterContext: {
+        regionCd: userRegionCd || null,
+        groupCd: userGroupCd || null,
+      },
+      message: redacted
+        ? `${peerFilterWarning ? `${peerFilterWarning} ` : ''}Peer group has fewer than ${MIN_PEER_SCHOOLS} schools. Aggregated peer metrics are hidden for privacy.`
+        : 'Comparison includes only aggregated peer averages. Individual peer school identities and raw records are hidden.',
     });
   } catch (err) {
-    res.status(500).json({ message: 'Error fetching comparison data', error: err.message });
+    res.status(500).json({ message: 'Error fetching peer comparison', error: err.message });
   }
 });
 

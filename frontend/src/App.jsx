@@ -5,7 +5,8 @@ import ProtectedRoute from './context/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
-import BenchmarkForm from './components/BenchmarkForm.jsx';  //i added
+import Benchmark from './pages/benchmark';
+import PeerComparison from './pages/PeerComparison';
 import './App.css';
 // import SpeechRecognition, {useSpeechRecognition} from "react-speech-recognition";
 import "regenerator-runtime/runtime";
@@ -90,10 +91,18 @@ function App() {
               }
             />
             <Route
+              path="/peer-comparison"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'school']}>
+                  <PeerComparison />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/benchmark"
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <BenchmarkForm />
+                  <Benchmark />
                 </ProtectedRoute>
               }
             />
