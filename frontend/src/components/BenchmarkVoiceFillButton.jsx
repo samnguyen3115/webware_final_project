@@ -156,7 +156,7 @@ export default function BenchmarkVoiceFillButton({
                 <div
                     style={{
                         position: "fixed",
-                        right: 20,
+                        right: 10,
                         bottom: 92,
                         width: 380,
                         background: "white",
@@ -279,8 +279,8 @@ export default function BenchmarkVoiceFillButton({
                 title="Voice-fill Benchmark Form"
                 style={{
                     position: "fixed",
-                    right: 20,
-                    bottom: 20,
+                    right: 10,
+                    bottom: 10,
                     width: 60,
                     height: 60,
                     borderRadius: "50%",

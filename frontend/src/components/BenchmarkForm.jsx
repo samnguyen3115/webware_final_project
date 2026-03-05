@@ -172,6 +172,7 @@ const BenchmarkForm = () => {
             <div>
               <h3 className="font-semibold mb-2">Required IDs</h3>
 
+              <a className="font-light italic">School ID</a>
               <input
                 type="number"
                 name="SCHOOL_ID"
@@ -182,6 +183,7 @@ const BenchmarkForm = () => {
               />
               {errors.SCHOOL_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_ID}</p>}
 
+              <a className="font-light italic">School Year ID</a>
               <input
                 type="number"
                 name="SCHOOL_YR_ID"
@@ -192,6 +194,7 @@ const BenchmarkForm = () => {
               />
               {errors.SCHOOL_YR_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_YR_ID}</p>}
 
+              <a className="font-light italic">Grade Definition ID</a>
               <input
                 type="number"
                 name="GRADE_DEF_ID"
@@ -206,6 +209,7 @@ const BenchmarkForm = () => {
             <div>
               <h3 className="font-semibold mb-2">Capacity & Contracted Enrollment</h3>
 
+              <a className="font-light italic">Capacity Enrollment</a>
               <input
                 type="number"
                 name="CAPACITY_ENROLL"
@@ -216,6 +220,7 @@ const BenchmarkForm = () => {
               />
               {errors.CAPACITY_ENROLL && <p className="text-red-600 text-sm">{errors.CAPACITY_ENROLL}</p>}
 
+              <a className="font-light italic">Contracted Enrollment (Boys)</a>
               <input
                 type="number"
                 name="CONTRACTED_ENROLL_BOYS"
@@ -226,6 +231,7 @@ const BenchmarkForm = () => {
               />
               {errors.CONTRACTED_ENROLL_BOYS && <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_BOYS}</p>}
 
+              <a className="font-light italic">Contracted Enrollment (Girls)</a>
               <input
                 type="number"
                 name="CONTRACTED_ENROLL_GIRLS"
@@ -236,6 +242,7 @@ const BenchmarkForm = () => {
               />
               {errors.CONTRACTED_ENROLL_GIRLS && <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_GIRLS}</p>}
 
+              <a className="font-light italic">Contracted Enrollment (Non-Binary)</a>
               <input
                 type="number"
                 name="CONTRACTED_ENROLL_NB"
@@ -252,6 +259,7 @@ const BenchmarkForm = () => {
             <div>
               <h3 className="font-semibold mb-2">Application Outcomes</h3>
 
+              <a className="font-light italic">Completed Applications Total</a>
               <input
                 type="number"
                 name="COMPLETED_APPLICATION_TOTAL"
@@ -262,23 +270,25 @@ const BenchmarkForm = () => {
               />
               {errors.COMPLETED_APPLICATION_TOTAL && <p className="text-red-600 text-sm">{errors.COMPLETED_APPLICATION_TOTAL}</p>}
 
+              <a className="font-light italic">Acceptances Total</a>
               <input
                 type="number"
                 name="ACCEPTANCES_TOTAL"
                 value={formData.ACCEPTANCES_TOTAL}
                 placeholder="Acceptances Total"
                 onChange={change}
-                className="w-full border p-2 rounded mt-2"
+                className="w-full border p-2 rounded mb-2"
               />
               {errors.ACCEPTANCES_TOTAL && <p className="text-red-600 text-sm">{errors.ACCEPTANCES_TOTAL}</p>}
 
+              <a className="font-light italic">New Enrollments Total</a>
               <input
                 type="number"
                 name="NEW_ENROLLMENTS_TOTAL"
                 value={formData.NEW_ENROLLMENTS_TOTAL}
                 placeholder="New Enrollments Total"
                 onChange={change}
-                className="w-full border p-2 rounded mt-2"
+                className="w-full border p-2 rounded mb-2"
               />
               {errors.NEW_ENROLLMENTS_TOTAL && (
                 <p className="text-red-600 text-sm">{errors.NEW_ENROLLMENTS_TOTAL}</p>

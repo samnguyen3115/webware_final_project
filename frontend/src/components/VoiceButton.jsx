@@ -52,8 +52,8 @@ export default function VoiceButton({ commands = [] }) {
                 <div
                     style={{
                         position: "fixed",
-                        left: 20,
-                        bottom: 92,
+                        left: 10,
+                        bottom: 82,
                         width: 340,
                         background: "white",
                         borderRadius: 16,
@@ -104,8 +104,8 @@ export default function VoiceButton({ commands = [] }) {
                 onClick={() => setOpen((v) => !v)}
                 style={{
                     position: "fixed",
-                    left: 20,
-                    bottom: 20,
+                    left: 10,
+                    bottom: 10,
                     width: 60,
                     height: 60,
                     borderRadius: "50%",
