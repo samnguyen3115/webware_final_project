@@ -27,7 +27,7 @@ export default function DashboardHeader({
                             <img
                                 src="https://ospreysoftware.com/wp-content/uploads/Osprey-Logo-Parent-Company.FINAL-90h2.png"
                                 alt="Osprey Software"
-                                className="h-10 w-auto"
+                                className="h-10 w-auto invert"
                             />
                         ) : (
                             <>

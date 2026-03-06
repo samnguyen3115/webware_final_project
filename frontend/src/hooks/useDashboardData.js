@@ -338,8 +338,8 @@ export function useDashboardData({ schoolId }) {
                     data,
                     fill: true,
                     tension: 0.35,
-                    borderColor: "#000000",
-                    backgroundColor: "rgba(0, 0, 0, 0.1)",
+                    borderColor: "#172c4f",
+                    backgroundColor: "#5A688280",
                 },
             ],
         };
@@ -352,8 +352,8 @@ export function useDashboardData({ schoolId }) {
                 {
                     label: "New Enrollments",
                     data: [admissionsAgg.enrollBoys, admissionsAgg.enrollGirls, admissionsAgg.enrollNB],
-                    backgroundColor: ["#404040", "#808080", "#D3D3D3"],
-                    borderColor: "#000000",
+                    backgroundColor: ["#334769", "#D5602A", "#50B7DC"],
+                    borderColor: "#00000080",
                 },
             ],
         };
@@ -531,8 +531,8 @@ export function useDashboardData({ schoolId }) {
                     data: ratios,
                     fill: true,
                     tension: 0.35,
-                    borderColor: "#000000",
-                    backgroundColor: "rgba(0, 0, 0, 0.1)",
+                    borderColor: "#172c4f",
+                    backgroundColor: "#5A688280",
                 },
             ],
         };
@@ -663,7 +663,7 @@ export function useDashboardData({ schoolId }) {
                             Number.isFinite(yourSchool?.fullTimeRate) ? yourSchool.fullTimeRate * 100 : 0,
                             Number.isFinite(yourSchool?.teacherCount) ? yourSchool.teacherCount : 0,
                         ],
-                        backgroundColor: "#404040",
+                        backgroundColor: "#334769",
                         borderColor: "#000000",
                     },
                     {
@@ -673,7 +673,7 @@ export function useDashboardData({ schoolId }) {
                             Number.isFinite(peerAverage?.fullTimeRate) ? peerAverage.fullTimeRate * 100 : 0,
                             Number.isFinite(peerAverage?.teacherCount) ? peerAverage.teacherCount : 0,
                         ],
-                        backgroundColor: "#9CA3AF",
+                        backgroundColor: "#D5602A",
                         borderColor: "#000000",
                     },
                 ],
@@ -690,7 +690,7 @@ export function useDashboardData({ schoolId }) {
                         Number.isFinite(yourSchool?.enrollments) ? yourSchool.enrollments : 0,
                         Number.isFinite(yourSchool?.fillRate) ? yourSchool.fillRate * 100 : 0,
                     ],
-                    backgroundColor: "#404040",
+                    backgroundColor: "#334769",
                     borderColor: "#000000",
                 },
                 {
@@ -700,7 +700,7 @@ export function useDashboardData({ schoolId }) {
                         Number.isFinite(peerAverage?.enrollments) ? peerAverage.enrollments : 0,
                         Number.isFinite(peerAverage?.fillRate) ? peerAverage.fillRate * 100 : 0,
                     ],
-                    backgroundColor: "#9CA3AF",
+                    backgroundColor: "#D5602A",
                     borderColor: "#000000",
                 },
             ],
