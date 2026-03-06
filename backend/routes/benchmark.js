@@ -60,13 +60,6 @@ router.post("/", auth, async (req, res) => {
       return res.status(400).json({ error: "NEW_ENROLLMENTS_TOTAL cannot exceed ACCEPTANCES_TOTAL" });
     }
 
-    const lastRecord = await Benchmark
-      .findOne()
-      .sort({ ID: -1 })
-      .select("ID");
-
-    payload.ID = lastRecord ? +lastRecord.ID + 1 : 1;
-
     console.log(payload);
 
     const benchmark = new Benchmark(payload);
@@ -76,6 +69,12 @@ router.post("/", auth, async (req, res) => {
     console.error(error);
     if (error.name === "ValidationError") {
       return res.status(400).json({ error: error.message });
+    }
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        error: "Duplicate key conflict while saving benchmark data. Please verify unique index configuration and retry.",
+        detail: error?.keyValue || null,
+      });
     }
     res.status(500).json({ error: "Error saving data" });
   }
