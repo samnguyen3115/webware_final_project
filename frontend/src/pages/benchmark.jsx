@@ -14,25 +14,23 @@ export default function Benchmark() {
     <div className="min-h-screen bg-[#F4F6F9] text-black">
       <DashboardHeader schoolId={schoolId} onLogout={logout} isAdmin={user?.role === "admin"} userRole={user?.role} />
 
-      <main className="w-full px-6 lg:px-10 py-6">
+      <main className="w-full px-6 lg:px-20 py-6">
         <div className="flex justify-center gap-3 mb-4">
           <button
             onClick={() => setBenchmarkCategory("Admissions")}
-            className={`rounded-lg px-4 py-2 font-medium transition ${
-              benchmarkCategory === "Admissions"
+            className={`rounded-lg px-4 py-2 font-medium transition ${benchmarkCategory === "Admissions"
                 ? "bg-[#0F2D52] text-white"
                 : "border border-gray-400 bg-white text-black hover:bg-gray-100"
-            }`}
+              }`}
           >
             Admissions Benchmark
           </button>
           <button
             onClick={() => setBenchmarkCategory("Employee")}
-            className={`rounded-lg px-4 py-2 font-medium transition ${
-              benchmarkCategory === "Employee"
+            className={`rounded-lg px-4 py-2 font-medium transition ${benchmarkCategory === "Employee"
                 ? "bg-[#0F2D52] text-white"
                 : "border border-gray-400 bg-white text-black hover:bg-gray-100"
-            }`}
+              }`}
           >
             Employee Benchmark
           </button>
