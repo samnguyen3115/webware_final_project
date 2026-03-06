@@ -1,6 +1,19 @@
 {
+  "name": "webware-final-project",
+  "version": "1.0.0",
+  "scripts": {
+    "install-backend": "cd backend && npm install",
+    "install-frontend": "cd frontend && npm install",
+    "build": "cd frontend && npm install && npm run build",
+    "start": "node backend/server.js",
+    "heroku-postbuild": "npm run build"
+  },
   "dependencies": {
     "react-speech-recognition": "^3.10.0",
     "regenerator-runtime": "^0.14.1"
+  },
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
   }
 }
