@@ -11,7 +11,7 @@
 - **routes/benchmarkEmployee.js** - POST endpoint for employee benchmark form submissions
 
 ## Frontend Hooks
-- **useDashboardData.js** ⭐ **Core** - Fetches & aggregates employee data
+- **useDashboardData.js** **Core** - Fetches & aggregates employee data
   - Employee category mapping (20 codes → friendly names)
   - Calculates: totalEmployees, fullTimeRate, studentTeacherRatio, topCategory
   - Creates trend data and pie chart data

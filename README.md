@@ -12,6 +12,8 @@
 - Implemented Voice Entry
     - The system allow users to trigger voice capture for filling the form
     - The system display transcribed text and mapped form values before submission
+- Graduate Credit Components
+    - Refer to graduateCredit.md for details
 
 # User Stories
 - As a user, I want to be able to log in with my username and password so I can access my account.
