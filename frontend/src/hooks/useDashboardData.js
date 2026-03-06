@@ -169,7 +169,7 @@ export function useDashboardData({ schoolId }) {
                 setPeerGroupOptions([
                     { key: "all_schools", label: "All Schools" },
                     { key: "region_cd", label: "Same Region" },
-                    { key: "group_cd", label: "Same group" },
+                    { key: "group_cd", label: "Same Group" },
                 ]);
             }
         }
