@@ -4,7 +4,7 @@ import { useNavigate, NavLink } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import BenchmarkVoiceFillButton from "./BenchmarkVoiceFillButton.jsx";
 
-const API = "http://localhost:5000";
+const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function BenchmarkForm() {
   const navigate = useNavigate();

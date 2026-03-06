@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
-const API = "http://localhost:5000";
+const API = import.meta.env.VITE_API_BASE_URL || "";
 
 const inputClass =
   "w-full border border-gray-300 px-4 py-4 text-lg rounded-lg bg-white outline-none focus:ring-2 focus:ring-[#0F2D52]";

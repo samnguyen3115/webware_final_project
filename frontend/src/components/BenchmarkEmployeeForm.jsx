@@ -4,7 +4,7 @@ import { AuthContext } from "../context/AuthContext";
 
 import BenchmarkEmployeeVoiceFillButton from "./BenchmarkEmployeeVoiceFillButton";
 
-const API = "http://localhost:5000";
+const API = import.meta.env.VITE_API_BASE_URL || "";
 
 const EMPLOYEE_CATEGORY_CODES = {
   "EMPCAT_T": "Teachers",
