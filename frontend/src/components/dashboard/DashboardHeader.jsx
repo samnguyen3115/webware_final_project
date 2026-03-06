@@ -37,12 +37,12 @@ export default function DashboardHeader({
 
                                 <p className="text-sm text-gray-300 mt-0.5">
                                     School ID:{" "}
-                                    <span className="text-black">{schoolId}</span>
+                                    <span className="text-white">{schoolId}</span>
                                     {Number.isFinite(schoolYearId) && (
                                         <>
                                             {" "}
                                             • Year:{" "}
-                                            <span className="text-black">
+                                            <span className="text-white">
                                                 {schoolYearId}
                                             </span>
                                         </>

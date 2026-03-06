@@ -3,6 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import "../App.css";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import BenchmarkForm from "../components/BenchmarkForm";
+import BenchmarkEmployeeForm from "../components/BenchmarkEmployeeForm";
 
 export default function Benchmark() {
   const { logout, user } = useContext(AuthContext) || {};
@@ -39,7 +40,11 @@ export default function Benchmark() {
 
         <h1 className="text-2xl font-bold mb-6 text-center">{benchmarkCategory} Benchmark Form</h1>
 
-        <BenchmarkForm category={benchmarkCategory} />
+        {benchmarkCategory === "Admissions" ? (
+          <BenchmarkForm />
+        ) : (
+          <BenchmarkEmployeeForm />
+        )}
       </main>
     </div>
   );

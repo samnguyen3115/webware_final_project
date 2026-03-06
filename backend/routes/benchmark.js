@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Benchmark = require("../models/AdmissionActivity");
+const Benchmark = require("../models/Benchmarkmod");
 const auth = require("../middleware/auth");
 
 const REQUIRED_FIELDS = ["SCHOOL_ID", "SCHOOL_YR_ID", "GRADE_DEF_ID"];
