@@ -581,9 +581,9 @@ export function useDashboardData({ schoolId }) {
         const labels = sortedCategories.map(([code]) => EMPLOYEE_CATEGORY_NAMES[code] || code);
         const data = sortedCategories.map(([, total]) => total);
         const colors = [
-            "#404040", "#555555", "#666666", "#707070", "#808080",
-            "#909090", "#A0A0A0", "#9CA3AF", "#AAAAAA", "#BBBBBB",
-            "#CCCCCC", "#DDDDDD", "#EEEEEE", "#B8B8B8", "#A8A8A8"
+            "#D97706", "#DC2626", "#F97316", "#F59E0B", "#EAB308",
+            "#CA8A04", "#B45309", "#A16207", "#FBBF24", "#FCD34D",
+            "#FDE047", "#FEF08A", "#FEF3C7", "#FEF9E7", "#FFFBEB"
         ];
         return {
             labels,
@@ -592,8 +592,8 @@ export function useDashboardData({ schoolId }) {
                     label: "Employee Count",
                     data,
                     backgroundColor: colors.slice(0, labels.length),
-                    borderColor: "#000000",
-                    borderWidth: 1,
+                    borderColor: "#FFFFFF",
+                    borderWidth: 2,
                 },
             ],
         };
