@@ -1,40 +1,17 @@
-import React, { useContext, useState } from "react";
+import React, { useState, useContext, useEffect, useMemo } from "react";
 import axios from "axios";
+import { useNavigate, NavLink } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { Link } from "react-router-dom";
+import BenchmarkVoiceFillButton from "./BenchmarkVoiceFillButton.jsx";
 
-import BenchmarkVoiceFillButton from "./BenchmarkVoiceFillButton";
+const API = import.meta.env.VITE_API_BASE_URL || "";
 
-const EMPLOYEE_CATEGORY_NAMES = {
-    EMPCAT_T: "Teachers",
-    EMPCAT_TS: "Teacher Support",
-    EMPCAT_TA: "Teaching Asst",
-    EMPCAT_TAID: "Teaching Asst ID",
-    EMPCAT_PMS: "Principals/Mgmt",
-    EMPCAT_ADM: "Admin",
-    EMPCAT_OAS: "Office Admin",
-    EMPCAT_AS: "Admin Support",
-    EMPCAT_AO: "Admin Other",
-    EMPCAT_CS: "Counselors",
-    EMPCAT_INT: "Instr Specialists",
-    EMPCAT_IS: "Instr Support",
-    EMPCAT_RS: "Reading Specialists",
-    EMPCAT_DCP: "Directors/Coords",
-    EMPCAT_SS: "Social Services",
-    EMPCAT_HS: "Health/Nurses",
-    EMPCAT_KS: "Food Service",
-    EMPCAT_OE: "Operations/Maint",
-    EMPCAT_MLS: "Media/Library",
-    EMPCAT_OC: "Other Support",
-};
-
-const BenchmarkForm = ({ category = "Admissions" }) => {
-  const { user } = useContext(AuthContext) || {};
+export default function BenchmarkForm() {
+  const navigate = useNavigate();
+  const { logout, user } = useContext(AuthContext) || {};
   const schoolId = Number(user?.schoolId) || "N/A";
 
-  /* Separate empty forms for each category */
-  const EMPTY_ADMISSIONS_FORM = {
-    SCHOOL_ID: Number(user?.schoolId) || "",
+  const defaultFormData = {
     SCHOOL_YR_ID: "",
     GRADE_DEF_ID: "",
     CAPACITY_ENROLL: "",
@@ -46,440 +23,330 @@ const BenchmarkForm = ({ category = "Admissions" }) => {
     NEW_ENROLLMENTS_TOTAL: "",
   };
 
-  const EMPTY_EMPLOYEE_FORM = {
-    SCHOOL_ID: Number(user?.schoolId) || "",
-    SCHOOL_YR_ID: "",
-    EMP_CAT_CD: "",
-    TOTAL_EMPLOYEES: "",
-    FT_EMPLOYEES: "",
-    SUBCONTRACT_FTE: "",
-    FTE_ONLY_SALARY_MIN: "",
-    FTE_ONLY_SALARY_MAX: "",
-    POC_EMPLOYEES: "",
-  };
-
-  const EMPTY_FORM = category === "Employee" ? EMPTY_EMPLOYEE_FORM : EMPTY_ADMISSIONS_FORM;
-  const [formData, setFormData] = useState(EMPTY_FORM);
-
+  const [formData, setFormData] = useState(defaultFormData);
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tab, setTab] = useState("form");
+  const [searchResults, setSearchResults] = useState([]);
+  const [editingYear, setEditingYear] = useState(null);
+  const [searchYearId, setSearchYearId] = useState("");
 
-  const change = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  /* Validate based on category */
   const validate = (data = formData) => {
-    let error = {};
+    const error = {};
 
-    if (category === "Employee") {
-      const requiredFields = ["SCHOOL_ID", "SCHOOL_YR_ID", "EMP_CAT_CD"];
-      requiredFields.forEach((field) => {
-        if (data[field] === "" || data[field] === null || data[field] === undefined) {
-          error[field] = "Required field.";
-        }
-      });
+    Object.entries(data).forEach(([key, value]) => {
+      if (value === "" || value === null) error[key] = "Required field.";
+      if (!isNaN(value) && Number(value) < 0) error[key] = "Cannot be negative.";
+    });
 
-      const numericFields = [
-        "SCHOOL_ID",
-        "SCHOOL_YR_ID",
-        "TOTAL_EMPLOYEES",
-        "FT_EMPLOYEES",
-        "SUBCONTRACT_FTE",
-        "FTE_ONLY_SALARY_MIN",
-        "FTE_ONLY_SALARY_MAX",
-        "POC_EMPLOYEES",
-      ];
+    const capacity = Number(data.CAPACITY_ENROLL);
+    const boys = Number(data.CONTRACTED_ENROLL_BOYS);
+    const girls = Number(data.CONTRACTED_ENROLL_GIRLS);
+    const nb = Number(data.CONTRACTED_ENROLL_NB);
+    const apps = Number(data.COMPLETED_APPLICATION_TOTAL);
+    const accepted = Number(data.ACCEPTANCES_TOTAL);
+    const enrolled = Number(data.NEW_ENROLLMENTS_TOTAL);
+    const contractedTotal = boys + girls + nb;
 
-      numericFields.forEach((field) => {
-        const value = data[field];
-        if (value === "" || value === null || value === undefined) return;
-        const parsed = Number(value);
-        if (!Number.isFinite(parsed)) {
-          error[field] = "Must be a valid number.";
-        } else if (parsed < 0) {
-          error[field] = "Cannot be negative.";
-        }
-      });
-    } else {
-      /* Admissions validation */
-      const requiredFields = ["SCHOOL_ID", "SCHOOL_YR_ID", "GRADE_DEF_ID"];
-      requiredFields.forEach((field) => {
-        if (data[field] === "" || data[field] === null || data[field] === undefined) {
-          error[field] = "Required field.";
-        }
-      });
+    if (accepted > apps) {
+      error.ACCEPTANCES_TOTAL = "Cannot exceed completed applications.";
+    }
+    if (enrolled > accepted) {
+      error.NEW_ENROLLMENTS_TOTAL = "Cannot exceed acceptances.";
+    }
+    if (enrolled > capacity) {
+      error.NEW_ENROLLMENTS_TOTAL = "New enrollments cannot exceed capacity.";
+    }
+    if (contractedTotal > capacity * 1.5) {
+      error.CONTRACTED_ENROLL_BOYS = `Combined contracted enrollment (${contractedTotal}) seems too high vs capacity (${capacity}).`;
+    }
+    if (capacity === 0) {
+      error.CAPACITY_ENROLL = "Capacity must be greater than 0.";
+    }
+    if (apps > capacity * 10) {
+      error.COMPLETED_APPLICATION_TOTAL = `Completed applications (${apps}) seem unusually high vs capacity (${capacity}). Please verify.`;
+    }
 
-      const numericFields = [
-        "SCHOOL_ID",
-        "SCHOOL_YR_ID",
-        "GRADE_DEF_ID",
-        "CAPACITY_ENROLL",
-        "CONTRACTED_ENROLL_BOYS",
-        "CONTRACTED_ENROLL_GIRLS",
-        "CONTRACTED_ENROLL_NB",
-        "COMPLETED_APPLICATION_TOTAL",
-        "ACCEPTANCES_TOTAL",
-        "NEW_ENROLLMENTS_TOTAL",
-      ];
+    const grade = Number(data.GRADE_DEF_ID);
+    if (isNaN(grade) || !Number.isInteger(grade) || grade <= 0) {
+      error.GRADE_DEF_ID = "Grade Definition ID must be a positive whole number.";
+    }
 
-      numericFields.forEach((field) => {
-        const value = data[field];
-        if (value === "" || value === null || value === undefined) return;
-        const parsed = Number(value);
-        if (!Number.isFinite(parsed)) {
-          error[field] = "Must be a valid number.";
-        } else if (parsed < 0) {
-          error[field] = "Cannot be negative.";
-        }
-      });
-
-      if (
-        data.ACCEPTANCES_TOTAL !== "" &&
-        data.COMPLETED_APPLICATION_TOTAL !== "" &&
-        Number(data.ACCEPTANCES_TOTAL) > Number(data.COMPLETED_APPLICATION_TOTAL)
-      ) {
-        error.ACCEPTANCES_TOTAL = "Cannot exceed completed applications.";
-      }
-
-      if (
-        data.NEW_ENROLLMENTS_TOTAL !== "" &&
-        data.ACCEPTANCES_TOTAL !== "" &&
-        Number(data.NEW_ENROLLMENTS_TOTAL) > Number(data.ACCEPTANCES_TOTAL)
-      ) {
-        error.NEW_ENROLLMENTS_TOTAL = "Cannot exceed acceptances.";
-      }
+    const yearId = Number(data.SCHOOL_YR_ID);
+    if (!Number.isInteger(yearId) || yearId <= 0) {
+      error.SCHOOL_YR_ID = "School Year ID must be a positive whole number.";
     }
 
     setErrors(error);
     return Object.keys(error).length === 0;
   };
 
-  const toNumberOrNull = (value) => {
-    if (value === "" || value === null || value === undefined) return null;
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
+  const resetForm = () => {
+    setFormData(defaultFormData);
+    setErrors({});
+    setEditingYear(null);
   };
 
-  const buildAdmissionsPayload = (data) => ({
-    SCHOOL_ID: Number(data.SCHOOL_ID),
-    SCHOOL_YR_ID: Number(data.SCHOOL_YR_ID),
-    GRADE_DEF_ID: Number(data.GRADE_DEF_ID),
-    CAPACITY_ENROLL: toNumberOrNull(data.CAPACITY_ENROLL),
-    CONTRACTED_ENROLL_BOYS: toNumberOrNull(data.CONTRACTED_ENROLL_BOYS),
-    CONTRACTED_ENROLL_GIRLS: toNumberOrNull(data.CONTRACTED_ENROLL_GIRLS),
-    CONTRACTED_ENROLL_NB: toNumberOrNull(data.CONTRACTED_ENROLL_NB),
-    COMPLETED_APPLICATION_TOTAL: toNumberOrNull(data.COMPLETED_APPLICATION_TOTAL) ?? 0,
-    ACCEPTANCES_TOTAL: toNumberOrNull(data.ACCEPTANCES_TOTAL) ?? 0,
-    NEW_ENROLLMENTS_TOTAL: toNumberOrNull(data.NEW_ENROLLMENTS_TOTAL) ?? 0,
-  });
-
-  const buildEmployeePayload = (data) => ({
-    SCHOOL_ID: Number(data.SCHOOL_ID),
-    SCHOOL_YR_ID: Number(data.SCHOOL_YR_ID),
-    EMP_CAT_CD: String(data.EMP_CAT_CD),
-    TOTAL_EMPLOYEES: toNumberOrNull(data.TOTAL_EMPLOYEES),
-    FT_EMPLOYEES: toNumberOrNull(data.FT_EMPLOYEES),
-    SUBCONTRACT_FTE: toNumberOrNull(data.SUBCONTRACT_FTE),
-    FTE_ONLY_SALARY_MIN: toNumberOrNull(data.FTE_ONLY_SALARY_MIN),
-    FTE_ONLY_SALARY_MAX: toNumberOrNull(data.FTE_ONLY_SALARY_MAX),
-    POC_EMPLOYEES: toNumberOrNull(data.POC_EMPLOYEES),
-  });
-
-  const validateAndShowErrors = (next) => {
-    return validate(next);
-  };
-
-  /* Submit form */
   const submit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
 
-    if (validate()) {
-      try {
-        setIsSubmitting(true);
-        const endpoint = category === "Employee" ? "/api/benchmark-employee" : "/api/benchmark";
-        const payload = category === "Employee" ? buildEmployeePayload(formData) : buildAdmissionsPayload(formData);
-        await axios.post(endpoint, payload, { withCredentials: true });
-        alert(`${category} benchmark saved and submitted.`);
-        setFormData({
-          ...EMPTY_FORM,
-          SCHOOL_ID: Number(user?.schoolId) || ""
-        });
-        setErrors({});
-      } catch (err) {
-        const message = err?.response?.data?.error || err?.response?.data?.message || "Error saving form.";
-        alert(message);
+    const payload = { ...formData, SCHOOL_ID: schoolId };
+    try {
+      if (editingYear) {
+        await axios.put(`${API}/api/benchmark/year/${editingYear}`, payload, { withCredentials: true });
+        alert("Record updated successfully!");
+      } else {
+        await axios.post(`${API}/api/benchmark`, payload, { withCredentials: true });
+        alert("New record created successfully!");
       }
-      setIsSubmitting(false);
+      resetForm();
+      setTab("search");
+      fetchAll(50);
+    } catch (err) {
+      console.error(err.response?.data || err);
+      alert("Error saving record.");
     }
   };
 
+  const loadForEdit = (record) => {
+    setFormData(record);
+    setEditingYear(record.SCHOOL_YR_ID);
+    setTab("form");
+  };
+
+  const deleteRecord = async (yearId) => {
+    if (!window.confirm("Delete this record?")) return;
+    try {
+      await axios.delete(`${API}/api/benchmark/year/${yearId}`, { withCredentials: true });
+      fetchAll(50);
+    } catch {
+      alert("Error deleting record.");
+    }
+  };
+
+  const fetchAll = async (limit = 50) => {
+    try {
+      const res = await axios.get(`${API}/api/benchmark?limit=${limit}`, { withCredentials: true });
+      setSearchResults(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setSearchResults([]);
+    }
+  };
+
+  const searchByYearId = async () => {
+    if (!searchYearId) {
+      alert("Enter a School Year ID to search.");
+      return;
+    }
+    try {
+      const res = await axios.get(`${API}/api/benchmark/year/${searchYearId}`, { withCredentials: true });
+      setSearchResults([res.data]);
+    } catch {
+      setSearchResults([]);
+      alert("No record found.");
+    }
+  };
+
+  const acceptanceRate = useMemo(() => {
+    return formData.COMPLETED_APPLICATION_TOTAL && formData.ACCEPTANCES_TOTAL
+      ? ((Number(formData.ACCEPTANCES_TOTAL) / Number(formData.COMPLETED_APPLICATION_TOTAL)) * 100).toFixed(1)
+      : "-";
+  }, [formData.ACCEPTANCES_TOTAL, formData.COMPLETED_APPLICATION_TOTAL]);
+
+  const yieldRate = useMemo(() => {
+    return formData.ACCEPTANCES_TOTAL && formData.NEW_ENROLLMENTS_TOTAL
+      ? ((Number(formData.NEW_ENROLLMENTS_TOTAL) / Number(formData.ACCEPTANCES_TOTAL)) * 100).toFixed(1)
+      : "-";
+  }, [formData.NEW_ENROLLMENTS_TOTAL, formData.ACCEPTANCES_TOTAL]);
+
+  const capacityFill = useMemo(() => {
+    return formData.CAPACITY_ENROLL && formData.NEW_ENROLLMENTS_TOTAL
+      ? ((Number(formData.NEW_ENROLLMENTS_TOTAL) / Number(formData.CAPACITY_ENROLL)) * 100).toFixed(1)
+      : "-";
+  }, [formData.NEW_ENROLLMENTS_TOTAL, formData.CAPACITY_ENROLL]);
+
+  useEffect(() => {
+    if (tab === "search") fetchAll(50);
+  }, [tab]);
+
   return (
-    <div className="w-full max-w-3xl">
-      <BenchmarkVoiceFillButton
-        formData={formData}
-        setFormData={(next) => {
-          setFormData(next);
-          validateAndShowErrors(next);
-        }}
-        validateAndShowErrors={validateAndShowErrors}
-        category={category}
-      />
+    <div className="bg-[#F4F6F9]">
 
-      <div className="mt-4 bg-white border p-8 rounded shadow">
-        <form onSubmit={submit} className="space-y-6">
-          {category === "Admissions" ? (
-            <>
-              <div>
-                <h3 className="font-semibold mb-2">Required IDs</h3>
-
-                <a className="font-light italic">School ID</a>
-              <input
-                  type="number"
-                  name="SCHOOL_ID"
-                  value={formData.SCHOOL_ID}
-                  placeholder="School ID"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.SCHOOL_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_ID}</p>}
-
-                <a className="font-light italic">School Year ID</a>
-              <input
-                  type="number"
-                  name="SCHOOL_YR_ID"
-                  value={formData.SCHOOL_YR_ID}
-                  placeholder="School Year ID"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.SCHOOL_YR_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_YR_ID}</p>}
-
-                <a className="font-light italic">Grade Definition ID</a>
-              <input
-                  type="number"
-                  name="GRADE_DEF_ID"
-                  value={formData.GRADE_DEF_ID}
-                  placeholder="Grade Definition ID"
-                  onChange={change}
-                  className="w-full border p-2 rounded"
-                />
-                {errors.GRADE_DEF_ID && <p className="text-red-600 text-sm">{errors.GRADE_DEF_ID}</p>}
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Capacity & Contracted Enrollment</h3>
-
-                <a className="font-light italic">Capacity Enrollment</a>
-              <input
-                  type="number"
-                  name="CAPACITY_ENROLL"
-                  value={formData.CAPACITY_ENROLL}
-                  placeholder="Capacity Enrollment"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.CAPACITY_ENROLL && <p className="text-red-600 text-sm">{errors.CAPACITY_ENROLL}</p>}
-
-                <a className="font-light italic">Contracted Enrollment (Boys)</a>
-              <input
-                  type="number"
-                  name="CONTRACTED_ENROLL_BOYS"
-                  value={formData.CONTRACTED_ENROLL_BOYS}
-                  placeholder="Contracted Enrollment (Boys)"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.CONTRACTED_ENROLL_BOYS && <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_BOYS}</p>}
-
-                <a className="font-light italic">Contracted Enrollment (Girls)</a>
-              <input
-                  type="number"
-                  name="CONTRACTED_ENROLL_GIRLS"
-                  value={formData.CONTRACTED_ENROLL_GIRLS}
-                  placeholder="Contracted Enrollment (Girls)"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.CONTRACTED_ENROLL_GIRLS && <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_GIRLS}</p>}
-
-                <a className="font-light italic">Contracted Enrollment (Non-Binary)</a>
-              <input
-                  type="number"
-                  name="CONTRACTED_ENROLL_NB"
-                  value={formData.CONTRACTED_ENROLL_NB}
-                  placeholder="Contracted Enrollment (Non-Binary)"
-                  onChange={change}
-                  className="w-full border p-2 rounded"
-                />
-                {errors.CONTRACTED_ENROLL_NB && (
-                  <p className="text-red-600 text-sm">{errors.CONTRACTED_ENROLL_NB}</p>
-                )}
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Application Outcomes</h3>
-
-                <a className="font-light italic">Completed Applications Total</a>
-              <input
-                  type="number"
-                  name="COMPLETED_APPLICATION_TOTAL"
-                  value={formData.COMPLETED_APPLICATION_TOTAL}
-                  placeholder="Completed Applications Total"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.COMPLETED_APPLICATION_TOTAL && <p className="text-red-600 text-sm">{errors.COMPLETED_APPLICATION_TOTAL}</p>}
-
-                <a className="font-light italic">Acceptances Total</a>
-              <input
-                  type="number"
-                  name="ACCEPTANCES_TOTAL"
-                  value={formData.ACCEPTANCES_TOTAL}
-                  placeholder="Acceptances Total"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.ACCEPTANCES_TOTAL && <p className="text-red-600 text-sm">{errors.ACCEPTANCES_TOTAL}</p>}
-
-                <a className="font-light italic">New Enrollments Total</a>
-              <input
-                  type="number"
-                  name="NEW_ENROLLMENTS_TOTAL"
-                  value={formData.NEW_ENROLLMENTS_TOTAL}
-                  placeholder="New Enrollments Total"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.NEW_ENROLLMENTS_TOTAL && (
-                  <p className="text-red-600 text-sm">{errors.NEW_ENROLLMENTS_TOTAL}</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <h3 className="font-semibold mb-2">Required IDs</h3>
-
-                <input
-                  type="number"
-                  name="SCHOOL_ID"
-                  value={formData.SCHOOL_ID}
-                  placeholder="School ID"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.SCHOOL_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_ID}</p>}
-
-                <input
-                  type="number"
-                  name="SCHOOL_YR_ID"
-                  value={formData.SCHOOL_YR_ID}
-                  placeholder="School Year ID"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.SCHOOL_YR_ID && <p className="text-red-600 text-sm">{errors.SCHOOL_YR_ID}</p>}
-
-                <select
-                  name="EMP_CAT_CD"
-                  value={formData.EMP_CAT_CD}
-                  onChange={change}
-                  className="w-full border p-2 rounded"
-                >
-                  <option value="">Select Employee Category</option>
-                  {Object.entries(EMPLOYEE_CATEGORY_NAMES).map(([code, name]) => (
-                    <option key={code} value={code}>{name} ({code})</option>
-                  ))}
-                </select>
-                {errors.EMP_CAT_CD && <p className="text-red-600 text-sm">{errors.EMP_CAT_CD}</p>}
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Employee Data</h3>
-
-                <input
-                  type="number"
-                  name="TOTAL_EMPLOYEES"
-                  value={formData.TOTAL_EMPLOYEES}
-                  placeholder="Total Employees"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.TOTAL_EMPLOYEES && <p className="text-red-600 text-sm">{errors.TOTAL_EMPLOYEES}</p>}
-
-                <input
-                  type="number"
-                  name="FT_EMPLOYEES"
-                  value={formData.FT_EMPLOYEES}
-                  placeholder="Full-Time Employees"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.FT_EMPLOYEES && <p className="text-red-600 text-sm">{errors.FT_EMPLOYEES}</p>}
-
-                <input
-                  type="number"
-                  name="SUBCONTRACT_FTE"
-                  value={formData.SUBCONTRACT_FTE}
-                  placeholder="Subcontract FTE"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.SUBCONTRACT_FTE && <p className="text-red-600 text-sm">{errors.SUBCONTRACT_FTE}</p>}
-
-                <input
-                  type="number"
-                  name="POC_EMPLOYEES"
-                  value={formData.POC_EMPLOYEES}
-                  placeholder="People of Color Employees"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.POC_EMPLOYEES && <p className="text-red-600 text-sm">{errors.POC_EMPLOYEES}</p>}
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Salary Range (Optional)</h3>
-
-                <input
-                  type="number"
-                  name="FTE_ONLY_SALARY_MIN"
-                  value={formData.FTE_ONLY_SALARY_MIN}
-                  placeholder="Minimum Salary"
-                  onChange={change}
-                  className="w-full border p-2 rounded mb-2"
-                />
-                {errors.FTE_ONLY_SALARY_MIN && <p className="text-red-600 text-sm">{errors.FTE_ONLY_SALARY_MIN}</p>}
-
-                <input
-                  type="number"
-                  name="FTE_ONLY_SALARY_MAX"
-                  value={formData.FTE_ONLY_SALARY_MAX}
-                  placeholder="Maximum Salary"
-                  onChange={change}
-                  className="w-full border p-2 rounded"
-                />
-                {errors.FTE_ONLY_SALARY_MAX && <p className="text-red-600 text-sm">{errors.FTE_ONLY_SALARY_MAX}</p>}
-              </div>
-            </>
-          )}
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-slate-800 text-white py-2 rounded hover:bg-slate-700"
-          >
-            Save and Submit
-          </button>
-        </form>
+      {/* kpis */}
+      <div className="w-full mt-6 grid grid-cols-3 gap-6 text-center">
+        <StatCard title="Acceptance Rate" value={`${acceptanceRate}%`} />
+        <StatCard title="Yield Rate" value={`${yieldRate}%`} />
+        <StatCard title="Capacity Fill" value={`${capacityFill}%`} />
       </div>
+
+      {/* tabs */}
+      <div className="w-full mt-8 flex gap-4 justify-center">
+        <TabButton active={tab === "form"} onClick={() => { resetForm(); setTab("form"); }}>+ Create Benchmark</TabButton>
+        <TabButton active={tab === "search"} onClick={() => { fetchAll(50); setTab("search"); }}>Search / Edit / Delete Benchmark</TabButton>
+      </div>
+
+      <BenchmarkVoiceFillButton formData={formData} setFormData={(next) => { setFormData(next); validate(next); }} validateAndShowErrors={validate} />
+
+      {/* form */}
+      {tab === "form" && (
+        <div className="w-full mt-8">
+          <div className="bg-white p-10 shadow-md border border-gray-200 rounded-2xl">
+            <form onSubmit={submit} className="space-y-10">
+              <Section title="Benchmark Details">
+                <Input name="SCHOOL_YR_ID" label="School Year ID" hint="Example: 7" value={formData.SCHOOL_YR_ID} onChange={(e) => setFormData({ ...formData, SCHOOL_YR_ID: e.target.value })} error={errors.SCHOOL_YR_ID} />
+                <Input name="GRADE_DEF_ID" label="Grade Definition ID" hint="Example: 1" value={formData.GRADE_DEF_ID} onChange={(e) => setFormData({ ...formData, GRADE_DEF_ID: e.target.value })} error={errors.GRADE_DEF_ID} />
+                <Input name="CAPACITY_ENROLL" label="Capacity Enrollment" hint="Example: 95 (total seats available for enrollment this year)" value={formData.CAPACITY_ENROLL} onChange={(e) => setFormData({ ...formData, CAPACITY_ENROLL: e.target.value })} error={errors.CAPACITY_ENROLL} />
+              </Section>
+
+              <Section title="Contracted Enrollment" note="Total of Boys + Girls + Non-Binary cannot exceed Capacity Enrollment.">
+                <Input name="CONTRACTED_ENROLL_BOYS" label="Boys" hint="Example: 55" value={formData.CONTRACTED_ENROLL_BOYS} onChange={(e) => setFormData({ ...formData, CONTRACTED_ENROLL_BOYS: e.target.value })} error={errors.CONTRACTED_ENROLL_BOYS} />
+                <Input name="CONTRACTED_ENROLL_GIRLS" label="Girls" hint="Example: 47" value={formData.CONTRACTED_ENROLL_GIRLS} onChange={(e) => setFormData({ ...formData, CONTRACTED_ENROLL_GIRLS: e.target.value })} error={errors.CONTRACTED_ENROLL_GIRLS} />
+                <Input name="CONTRACTED_ENROLL_NB" label="Non-Binary" hint="Example: 0" value={formData.CONTRACTED_ENROLL_NB} onChange={(e) => setFormData({ ...formData, CONTRACTED_ENROLL_NB: e.target.value })} error={errors.CONTRACTED_ENROLL_NB} />
+              </Section>
+
+              <Section title="Application Outcomes">
+                <Input name="COMPLETED_APPLICATION_TOTAL" label="Completed Applications" hint="Example: 71 (cannot be less than Acceptances)" value={formData.COMPLETED_APPLICATION_TOTAL} onChange={(e) => setFormData({ ...formData, COMPLETED_APPLICATION_TOTAL: e.target.value })} error={errors.COMPLETED_APPLICATION_TOTAL} />
+                <Input name="ACCEPTANCES_TOTAL" label="Acceptances" hint="Example: 56 (cannot exceed Completed Applications)" value={formData.ACCEPTANCES_TOTAL} onChange={(e) => setFormData({ ...formData, ACCEPTANCES_TOTAL: e.target.value })} error={errors.ACCEPTANCES_TOTAL} />
+                <Input name="NEW_ENROLLMENTS_TOTAL" label="New Enrollments" hint="Example: 42 (cannot exceed Acceptances)" value={formData.NEW_ENROLLMENTS_TOTAL} onChange={(e) => setFormData({ ...formData, NEW_ENROLLMENTS_TOTAL: e.target.value })} error={errors.NEW_ENROLLMENTS_TOTAL} />
+              </Section>
+
+              <ArrowButton type="submit" fullWidth>
+                {editingYear ? "Update Benchmark Record" : "Save Benchmark Record"}
+              </ArrowButton>
+
+              <button
+                type="button"
+                onClick={resetForm}
+                className="w-full py-3 text-lg font-semibold rounded-lg text-white bg-[#4B5563] hover:bg-[#374151] transition-all duration-300"
+              >
+                Reset Form
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* search */}
+      {tab === "search" && (
+        <div className="w-full mt-8">
+          <div className="flex gap-4 mb-6">
+            <input
+              type="text"
+              placeholder="Search by School Year ID"
+              value={searchYearId}
+              onChange={(e) => setSearchYearId(e.target.value)}
+              className="border p-3 rounded flex-1 focus:ring-2 focus:ring-[#0F2D52] outline-none"
+            />
+            <ArrowButton onClick={searchByYearId} bg="#0F2D52" hoverBg="#1a4a7a" textColor="white">Search</ArrowButton>
+            <ArrowButton onClick={() => fetchAll(50)} bg="#4B5563" hoverBg="#374151" textColor="white">Reset</ArrowButton>
+          </div>
+
+          <table className="w-full border rounded-lg overflow-hidden shadow">
+            <thead className="bg-[#0F2D52] text-white">
+              <tr>
+                <th className="p-3">School Year ID</th>
+                <th className="p-3">Grade</th>
+                <th className="p-3">Capacity</th>
+                <th className="p-3">Completed Apps</th>
+                <th className="p-3">Accepted</th>
+                <th className="p-3">Enrolled</th>
+                <th className="p-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {searchResults.length ? searchResults.map((rec, i) => (
+                <tr key={i} className={i % 2 === 0 ? "bg-gray-100 text-center" : "bg-white text-center"}>
+                  <td className="p-3">{rec.SCHOOL_YR_ID}</td>
+                  <td className="p-3">{rec.GRADE_DEF_ID}</td>
+                  <td className="p-3">{rec.CAPACITY_ENROLL}</td>
+                  <td className="p-3">{rec.COMPLETED_APPLICATION_TOTAL}</td>
+                  <td className="p-3">{rec.ACCEPTANCES_TOTAL}</td>
+                  <td className="p-3">{rec.NEW_ENROLLMENTS_TOTAL}</td>
+                  <td className="py-2 flex justify-center gap-6 min-w-[160px]">
+                    <ArrowButton onClick={() => loadForEdit(rec)} small>Edit</ArrowButton>
+                    <ArrowButton onClick={() => deleteRecord(rec.SCHOOL_YR_ID)} small bg="#D94141" hoverBg="#B23030" textColor="white">Delete</ArrowButton>
+                  </td>
+                </tr>
+              )) : (
+                <tr><td colSpan="7" className="text-center py-6 text-gray-500">No records found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
-};
+}
 
-export default BenchmarkForm;
+function Section({ title, children, note }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold text-[#0F2D52] mb-6 border-b pb-2">{title}</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">{children}</div>
+      {note && <p className="text-gray-500 text-sm mt-4 italic">Note: {note}</p>}
+    </div>
+  );
+}
+
+function Input({ name, label, hint, value, onChange, error }) {
+  return (
+    <div>
+      <label className="block font-semibold mb-2 text-lg">{label} <span className="text-red-600">*</span></label>
+      <input
+        type="number"
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full border px-4 py-4 text-lg rounded focus:ring-2 focus:ring-[#0F2D52] outline-none"
+      />
+      {hint && <p className="text-gray-400 text-sm mt-1">{hint}</p>}
+      {error && <p className="text-red-600 mt-1 text-sm">{error}</p>}
+    </div>
+  );
+}
+
+function StatCard({ title, value }) {
+  return (
+    <div className="bg-white p-6 shadow rounded">
+      <p className="text-gray-500 font-semibold">{title}</p>
+      <p className="text-2xl font-bold mt-2">{value}</p>
+    </div>
+  );
+}
+
+function TabButton({ active, children, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-10 py-3 rounded-full font-semibold text-lg ${active ? "bg-[#0F2D52] text-white" : "bg-gray-200 text-gray-700"} transform transition-all duration-200 hover:scale-105 shadow-md`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ArrowButton({ children, onClick, bg = "#FFA500", hoverBg = "#f39200", textColor = "#000", small, fullWidth, type = "button" }) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      className={`
+        ${fullWidth ? "w-full" : ""}
+        ${small ? "px-4 py-2 text-sm" : "px-6 py-3 text-lg"}
+        font-semibold rounded-lg relative flex items-center justify-center
+        transition-colors duration-300 group overflow-hidden
+      `}
+      style={{
+        backgroundColor: bg,
+        color: textColor,
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBg)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = bg)}
+    >
+      <span className="transition-all duration-300 group-hover:-translate-x-2">{children}</span>
+      <span className="absolute right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+        →
+      </span>
+    </button>
+  );
+}

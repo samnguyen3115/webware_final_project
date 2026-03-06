@@ -1,36 +1,52 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useContext } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
+import { AuthContext } from "../context/AuthContext";
 
-const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+const API = import.meta.env.VITE_API_BASE_URL || "";
+
+const inputClass =
+  "w-full border border-gray-300 px-4 py-4 text-lg rounded-lg bg-white outline-none focus:ring-2 focus:ring-[#0F2D52]";
+
+const tabClass = (active) =>
+  `px-8 py-3 rounded-full font-semibold text-lg shadow-md transition-all duration-200 ${active
+    ? "bg-[#0F2D52] text-white"
+    : "bg-gray-200 text-gray-700 hover:scale-105"
+  }`;
+
+export default function Login() {
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const [loginType, setLoginType] = useState("school"); // school maps to teacher/student
+  const [loginType, setLoginType] = useState("school");
 
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/auth/login', formData, { withCredentials: true });
+      const response = await axios.post(`${API}/api/auth/login`, formData, {
+        withCredentials: true,
+      });
+
       const userRole = response.data.user.role;
 
       if (userRole !== loginType) {
-        setError(`This account is not registered as a ${loginType === 'admin' ? 'admin' : 'teacher/student'} user.`);
+        setError(
+          `This account is not registered as a ${loginType === "admin" ? "admin" : "teacher"
+          } user.`
+        );
         setLoading(false);
         return;
       }
@@ -38,75 +54,104 @@ const Login = () => {
       login(response.data.user);
 
       if (userRole === "admin") {
-        navigate('/benchmark');
+        navigate("/benchmark");
       } else {
-        navigate('/dashboard');
+        navigate("/dashboard");
       }
-
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-4">
-      <div className="w-full max-w-md rounded-xl bg-gray-100 p-10 shadow-2xl">
-        <h1 className="mb-6 text-center text-3xl font-semibold text-black">{loginType === "admin" ? "Admin Login" : "Teacher/Student Login"}</h1>
-        <div className="mb-6 flex justify-center gap-4">
-          <button type="button"
-            onClick={() => setLoginType("school")}
-            className={`px-2 py-2 rounded-md ${loginType === "school" ? "bg-black text-white" : "bg-gray-300 text-black"}`}>Teacher/Student</button>
-
-          <button type="button"
-            onClick={() => setLoginType("admin")}
-            className={`px-2 py-2 rounded-md ${loginType === "admin" ? "bg-black text-white" : "bg-gray-300 text-black"}`}>Admin</button>
-
-        </div>
-
-        {error && (
-          <div className="mb-5 rounded-md border border-gray-400 bg-gray-200 p-3 text-sm text-black">
-            {error}
+    <div className="min-h-screen bg-[#F4F6F9] px-4 py-12">
+      <div className="mx-auto w-full max-w-2xl">
+        <div className="bg-white p-10 shadow-md border border-gray-200 rounded-2xl">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-semibold text-[#0F2D52]">
+              {loginType === "admin" ? "Admin Login" : "Teacher Login"}
+            </h1>
+            <p className="mt-2 text-gray-500 text-base">
+              Sign in to access your dashboard
+            </p>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="rounded-md border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
-            required
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className="rounded-md border border-gray-400 bg-white px-3 py-3 text-sm text-black outline-none transition focus:border-black focus:ring-2 focus:ring-gray-300"
-            required
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-md bg-black px-3 py-3 text-base font-bold text-white transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        <p className="mt-6 text-center text-sm text-gray-700">
-          Don&apos;t have an account?{' '}
-          <a href="/signup" className="font-semibold text-black hover:underline">
-            Sign up
-          </a>
-        </p>
+          <div className="mb-8 flex justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => setLoginType("school")}
+              className={tabClass(loginType === "school")}
+            >
+              Teacher
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginType("admin")}
+              className={tabClass(loginType === "admin")}
+            >
+              Admin
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block font-semibold mb-2 text-lg text-[#111827]">
+                Email <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2 text-lg text-[#111827]">
+                Password <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="password"
+                name="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 text-lg font-semibold rounded-lg text-black bg-[#FFA500] hover:bg-[#f39200] transition-all duration-300"
+            >
+              {loading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-base text-gray-600">
+            Don&apos;t have an account?{" "}
+            <Link
+              to="/signup"
+              className="font-semibold text-[#0F2D52] hover:underline"
+            >
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Login;
+}

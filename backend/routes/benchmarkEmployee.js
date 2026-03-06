@@ -65,4 +65,69 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
+// get all
+router.get("/", auth, async (req, res) => {
+  try {
+    let limit = parseInt(req.query.limit) || 0;
+    const benchmarkEmployees = limit > 0
+      ? await BenchmarkEmployee.find().limit(limit)
+      : await BenchmarkEmployee.find();
+    res.json(benchmarkEmployees);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch benchmark employees" });
+  }
+});
+
+// get by school year id
+router.get("/year/:yearId", auth, async (req, res) => {
+  try {
+    const yearId = Number(req.params.yearId);
+    const benchmarkEmployees = await BenchmarkEmployee.find({ SCHOOL_YR_ID: yearId });
+    if (!benchmarkEmployees || benchmarkEmployees.length === 0) {
+      return res.status(404).json({ error: "Records not found" });
+    }
+    res.json(benchmarkEmployees);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch benchmark employees" });
+  }
+});
+
+// update by id
+router.put("/:id", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Admins only" });
+    }
+
+    const benchmarkEmployee = await BenchmarkEmployee.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body },
+      { new: true, runValidators: true }
+    );
+    if (!benchmarkEmployee) {
+      return res.status(404).json({ error: "Record not found" });
+    }
+    res.json({ message: "Updated successfully", benchmarkEmployee });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update benchmark employee" });
+  }
+});
+
+// delete by id
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Admins only" });
+    }
+
+    const benchmarkEmployee = await BenchmarkEmployee.findByIdAndDelete(req.params.id);
+    if (!benchmarkEmployee) {
+      return res.status(404).json({ error: "Record not found" });
+    }
+    res.json({ message: "Deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete benchmark employee" });
+  }
+});
+
 module.exports = router;

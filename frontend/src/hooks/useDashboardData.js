@@ -109,26 +109,29 @@ export function useDashboardData({ schoolId }) {
                 setEmployeePersonnelRows(employeePersonnelData);
                 setEmployeeAdminSupportRows(employeeAdminSupportData);
 
-                // Get available school years from ALL collections
-                const allYears = new Set();
-                activityData.forEach(r => {
-                    if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-                });
-                enrollmentData.forEach(r => {
-                    if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-                });
-                socData.forEach(r => {
-                    if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-                });
-                employeePersonnelData.forEach(r => {
-                    if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-                });
-                employeeAdminSupportData.forEach(r => {
-                    if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-                });
+                // Get available school years based on initial category
+                const years = new Set();
+                if (category === "Admissions") {
+                    activityData.forEach(r => {
+                        if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+                    });
+                    enrollmentData.forEach(r => {
+                        if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+                    });
+                    socData.forEach(r => {
+                        if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+                    });
+                } else {
+                    employeePersonnelData.forEach(r => {
+                        if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+                    });
+                    employeeAdminSupportData.forEach(r => {
+                        if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+                    });
+                }
                 
-                const years = Array.from(allYears).sort((x, y) => x - y);
-                setSchoolYearId((prev) => prev ?? years[years.length - 1] ?? null);
+                const sortedYears = Array.from(years).sort((x, y) => x - y);
+                setSchoolYearId((prev) => prev ?? sortedYears[sortedYears.length - 1] ?? null);
             } catch (e2) {
                 if (alive) {
                     setErr(e2?.message || "Failed to load dashboard data");
@@ -217,24 +220,44 @@ export function useDashboardData({ schoolId }) {
     }, [peerGroup, schoolYearId, category]);
 
     const availableYears = useMemo(() => {
-        const allYears = new Set();
-        activityRows.forEach(r => {
-            if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-        });
-        enrollmentRows.forEach(r => {
-            if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-        });
-        socRows.forEach(r => {
-            if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-        });
-        employeePersonnelRows.forEach(r => {
-            if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-        });
-        employeeAdminSupportRows.forEach(r => {
-            if (Number.isFinite(r.SCHOOL_YR_ID)) allYears.add(r.SCHOOL_YR_ID);
-        });
-        return Array.from(allYears).sort((a, b) => a - b);
-    }, [activityRows, enrollmentRows, socRows, employeePersonnelRows, employeeAdminSupportRows]);
+        const years = new Set();
+        
+        if (category === "Admissions") {
+            // Only include years from admission-related data
+            activityRows.forEach(r => {
+                if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+            });
+            enrollmentRows.forEach(r => {
+                if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+            });
+            socRows.forEach(r => {
+                if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+            });
+        } else if (category === "Employee") {
+            // Only include years from employee-related data
+            employeePersonnelRows.forEach(r => {
+                if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+            });
+            employeeAdminSupportRows.forEach(r => {
+                if (Number.isFinite(r.SCHOOL_YR_ID)) years.add(r.SCHOOL_YR_ID);
+            });
+        }
+        
+        return Array.from(years).sort((a, b) => a - b);
+    }, [category, activityRows, enrollmentRows, socRows, employeePersonnelRows, employeeAdminSupportRows]);
+
+    // When category changes, ensure the selected year exists in the new category
+    useEffect(() => {
+        if (availableYears.length === 0) {
+            setSchoolYearId(null);
+            return;
+        }
+        
+        // If current year is not available in this category, switch to the most recent year
+        if (!availableYears.includes(schoolYearId)) {
+            setSchoolYearId(availableYears[availableYears.length - 1]);
+        }
+    }, [category, availableYears, schoolYearId]);
 
     const activityFiltered = useMemo(() => {
         if (!Number.isFinite(schoolYearId)) return [];
@@ -287,7 +310,8 @@ export function useDashboardData({ schoolId }) {
         // Get contracted enrollments (current enrolled students) from all activity rows
         const enrollBoys = sumField(activityFiltered, "CONTRACTED_ENROLL_BOYS");
         const enrollGirls = sumField(activityFiltered, "CONTRACTED_ENROLL_GIRLS");
-        const enrollTotal = enrollBoys + enrollGirls;
+        const enrollNB = sumField(activityFiltered, "CONTRACTED_ENROLL_NB");
+        const enrollTotal = enrollBoys + enrollGirls + enrollNB;
         
         // Acceptance rate: Acceptances / Applications (only if we have valid data)
         const acceptanceRate = appsTotal > 0 ? safeDiv(acceptTotal, appsTotal) : undefined;
@@ -316,6 +340,7 @@ export function useDashboardData({ schoolId }) {
             enrollmentRate,
             enrollBoys,
             enrollGirls,
+            enrollNB,
             cap,
         };
     }, [activityFiltered]);
@@ -336,8 +361,8 @@ export function useDashboardData({ schoolId }) {
                     data,
                     fill: true,
                     tension: 0.35,
-                    borderColor: "#000000",
-                    backgroundColor: "rgba(0, 0, 0, 0.1)",
+                    borderColor: "#172c4f",
+                    backgroundColor: "#5A688280",
                 },
             ],
         };
@@ -345,13 +370,13 @@ export function useDashboardData({ schoolId }) {
 
     const genderDoughnutData = useMemo(() => {
         return {
-            labels: ["Boys", "Girls"],
+            labels: ["Boys", "Girls", "Non-Binary"],
             datasets: [
                 {
                     label: "New Enrollments",
-                    data: [admissionsAgg.enrollBoys, admissionsAgg.enrollGirls],
-                    backgroundColor: ["#404040", "#808080"],
-                    borderColor: "#000000",
+                    data: [admissionsAgg.enrollBoys, admissionsAgg.enrollGirls, admissionsAgg.enrollNB],
+                    backgroundColor: ["#334769", "#D5602A", "#50B7DC"],
+                    borderColor: "#00000080",
                 },
             ],
         };
@@ -387,7 +412,7 @@ export function useDashboardData({ schoolId }) {
         const pocEmployees = sumField(employeePersonnelFiltered, "POC_EMPLOYEES");
         const subcontractFTE = sumField(employeePersonnelFiltered, "SUBCONTRACT_FTE");
 
-        const studentsTotal = sumField(activityFiltered, "CONTRACTED_ENROLL_BOYS") + sumField(activityFiltered, "CONTRACTED_ENROLL_GIRLS");
+        const studentsTotal = sumField(activityFiltered, "CONTRACTED_ENROLL_BOYS") + sumField(activityFiltered, "CONTRACTED_ENROLL_GIRLS") + sumField(activityFiltered, "CONTRACTED_ENROLL_NB");
         const teacherCategoryCodes = new Set(["EMPCAT_T", "EMPCAT_TS"]);
         const teacherRows = employeePersonnelFiltered.filter((r) => {
             const categoryCode = String(r.EMP_CAT_CD ?? "").trim().toUpperCase();
@@ -494,14 +519,20 @@ export function useDashboardData({ schoolId }) {
 
     const employeeStudentTeacherTrendData = useMemo(() => {
         const teacherCategoryCodes = new Set(["EMPCAT_T", "EMPCAT_TS"]);
-        const years = Array.from(
-            new Set([
-                ...activityRows.map((r) => r.SCHOOL_YR_ID),
-                ...employeePersonnelRows.map((r) => r.SCHOOL_YR_ID),
-            ])
-        )
-            .filter((y) => Number.isFinite(y))
-            .sort((a, b) => a - b);
+        
+        // Only show years that have BOTH admission data (students) AND employee data (teachers)
+        const admissionYears = new Set(
+            activityRows.map((r) => r.SCHOOL_YR_ID).filter((y) => Number.isFinite(y))
+        );
+        const employeeYears = new Set(
+            employeePersonnelRows.map((r) => r.SCHOOL_YR_ID).filter((y) => Number.isFinite(y))
+        );
+        
+        // Intersect with available years based on current category
+        const years = availableYears.filter((year) => {
+            // For this chart, we need both admission AND employee data
+            return admissionYears.has(year) && employeeYears.has(year);
+        });
 
         const ratios = years.map((year) => {
             const yearActivity = activityRows.filter((r) => r.SCHOOL_YR_ID === year);
@@ -529,12 +560,12 @@ export function useDashboardData({ schoolId }) {
                     data: ratios,
                     fill: true,
                     tension: 0.35,
-                    borderColor: "#000000",
-                    backgroundColor: "rgba(0, 0, 0, 0.1)",
+                    borderColor: "#172c4f",
+                    backgroundColor: "#5A688280",
                 },
             ],
         };
-    }, [activityRows, employeePersonnelRows]);
+    }, [activityRows, employeePersonnelRows, availableYears]);
 
     const employeeCategoriesPieData = useMemo(() => {
         const categoryTotals = new Map();
@@ -550,9 +581,9 @@ export function useDashboardData({ schoolId }) {
         const labels = sortedCategories.map(([code]) => EMPLOYEE_CATEGORY_NAMES[code] || code);
         const data = sortedCategories.map(([, total]) => total);
         const colors = [
-            "#404040", "#555555", "#666666", "#707070", "#808080",
-            "#909090", "#A0A0A0", "#9CA3AF", "#AAAAAA", "#BBBBBB",
-            "#CCCCCC", "#DDDDDD", "#EEEEEE", "#B8B8B8", "#A8A8A8"
+            "#D97706", "#DC2626", "#F97316", "#F59E0B", "#EAB308",
+            "#CA8A04", "#B45309", "#A16207", "#FBBF24", "#FCD34D",
+            "#FDE047", "#FEF08A", "#FEF3C7", "#FEF9E7", "#FFFBEB"
         ];
         return {
             labels,
@@ -561,8 +592,8 @@ export function useDashboardData({ schoolId }) {
                     label: "Employee Count",
                     data,
                     backgroundColor: colors.slice(0, labels.length),
-                    borderColor: "#000000",
-                    borderWidth: 1,
+                    borderColor: "#FFFFFF",
+                    borderWidth: 2,
                 },
             ],
         };
@@ -661,7 +692,7 @@ export function useDashboardData({ schoolId }) {
                             Number.isFinite(yourSchool?.fullTimeRate) ? yourSchool.fullTimeRate * 100 : 0,
                             Number.isFinite(yourSchool?.teacherCount) ? yourSchool.teacherCount : 0,
                         ],
-                        backgroundColor: "#404040",
+                        backgroundColor: "#334769",
                         borderColor: "#000000",
                     },
                     {
@@ -671,7 +702,7 @@ export function useDashboardData({ schoolId }) {
                             Number.isFinite(peerAverage?.fullTimeRate) ? peerAverage.fullTimeRate * 100 : 0,
                             Number.isFinite(peerAverage?.teacherCount) ? peerAverage.teacherCount : 0,
                         ],
-                        backgroundColor: "#9CA3AF",
+                        backgroundColor: "#D5602A",
                         borderColor: "#000000",
                     },
                 ],
@@ -688,7 +719,7 @@ export function useDashboardData({ schoolId }) {
                         Number.isFinite(yourSchool?.enrollments) ? yourSchool.enrollments : 0,
                         Number.isFinite(yourSchool?.fillRate) ? yourSchool.fillRate * 100 : 0,
                     ],
-                    backgroundColor: "#404040",
+                    backgroundColor: "#334769",
                     borderColor: "#000000",
                 },
                 {
@@ -698,7 +729,7 @@ export function useDashboardData({ schoolId }) {
                         Number.isFinite(peerAverage?.enrollments) ? peerAverage.enrollments : 0,
                         Number.isFinite(peerAverage?.fillRate) ? peerAverage.fillRate * 100 : 0,
                     ],
-                    backgroundColor: "#9CA3AF",
+                    backgroundColor: "#D5602A",
                     borderColor: "#000000",
                 },
             ],
