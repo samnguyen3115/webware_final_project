@@ -2,6 +2,8 @@ import React, { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
+import BenchmarkEmployeeVoiceFillButton from "./BenchmarkEmployeeVoiceFillButton";
+
 const API = "http://localhost:5000";
 
 const EMPLOYEE_CATEGORY_CODES = {
@@ -30,6 +32,7 @@ const EMPLOYEE_CATEGORY_CODES = {
 export default function BenchmarkEmployeeForm() {
   const { user } = useContext(AuthContext) || {};
   const schoolId = Number(user?.schoolId) || "N/A";
+  const validateAndShowErrors = (data) => validate(data);
 
   const defaultFormData = {
     SCHOOL_YR_ID: "",
@@ -169,75 +172,75 @@ export default function BenchmarkEmployeeForm() {
           <div className="bg-white p-10 shadow-md border border-gray-200 rounded-2xl">
             <form onSubmit={submit} className="space-y-10">
               <Section title="Employee Benchmark Details" note="Basic benchmark information for the selected employee category">
-                <Input 
-                  name="SCHOOL_YR_ID" 
-                  label="School Year ID" 
-                  hint="Example: 7" 
-                  value={formData.SCHOOL_YR_ID} 
-                  onChange={(e) => setFormData({ ...formData, SCHOOL_YR_ID: e.target.value })} 
-                  error={errors.SCHOOL_YR_ID} 
+                <Input
+                  name="SCHOOL_YR_ID"
+                  label="School Year ID"
+                  hint="Example: 7"
+                  value={formData.SCHOOL_YR_ID}
+                  onChange={(e) => setFormData({ ...formData, SCHOOL_YR_ID: e.target.value })}
+                  error={errors.SCHOOL_YR_ID}
                 />
-                <SelectInput 
-                  name="EMP_CAT_CD" 
-                  label="Employee Category" 
-                  value={formData.EMP_CAT_CD} 
-                  onChange={(e) => setFormData({ ...formData, EMP_CAT_CD: e.target.value })} 
+                <SelectInput
+                  name="EMP_CAT_CD"
+                  label="Employee Category"
+                  value={formData.EMP_CAT_CD}
+                  onChange={(e) => setFormData({ ...formData, EMP_CAT_CD: e.target.value })}
                   error={errors.EMP_CAT_CD}
                   options={EMPLOYEE_CATEGORY_CODES}
                 />
               </Section>
 
               <Section title="Employee Counts" note="Total headcount and full-time equivalent employees">
-                <Input 
-                  name="TOTAL_EMPLOYEES" 
-                  label="Total Employees" 
-                  hint="Example: 45" 
-                  value={formData.TOTAL_EMPLOYEES} 
-                  onChange={(e) => setFormData({ ...formData, TOTAL_EMPLOYEES: e.target.value })} 
-                  error={errors.TOTAL_EMPLOYEES} 
+                <Input
+                  name="TOTAL_EMPLOYEES"
+                  label="Total Employees"
+                  hint="Example: 45"
+                  value={formData.TOTAL_EMPLOYEES}
+                  onChange={(e) => setFormData({ ...formData, TOTAL_EMPLOYEES: e.target.value })}
+                  error={errors.TOTAL_EMPLOYEES}
                 />
-                <Input 
-                  name="FT_EMPLOYEES" 
-                  label="Full-Time Employees" 
-                  hint="Example: 40" 
-                  value={formData.FT_EMPLOYEES} 
-                  onChange={(e) => setFormData({ ...formData, FT_EMPLOYEES: e.target.value })} 
-                  error={errors.FT_EMPLOYEES} 
+                <Input
+                  name="FT_EMPLOYEES"
+                  label="Full-Time Employees"
+                  hint="Example: 40"
+                  value={formData.FT_EMPLOYEES}
+                  onChange={(e) => setFormData({ ...formData, FT_EMPLOYEES: e.target.value })}
+                  error={errors.FT_EMPLOYEES}
                 />
-                <Input 
-                  name="POC_EMPLOYEES" 
-                  label="Part-Time/Contractors" 
-                  hint="Example: 5" 
-                  value={formData.POC_EMPLOYEES} 
-                  onChange={(e) => setFormData({ ...formData, POC_EMPLOYEES: e.target.value })} 
-                  error={errors.POC_EMPLOYEES} 
+                <Input
+                  name="POC_EMPLOYEES"
+                  label="Part-Time/Contractors"
+                  hint="Example: 5"
+                  value={formData.POC_EMPLOYEES}
+                  onChange={(e) => setFormData({ ...formData, POC_EMPLOYEES: e.target.value })}
+                  error={errors.POC_EMPLOYEES}
                 />
               </Section>
 
               <Section title="Subcontracting & Salary" note="Subcontracting FTE and salary range for full-time equivalent positions">
-                <Input 
-                  name="SUBCONTRACT_FTE" 
-                  label="Subcontract FTE" 
-                  hint="Example: 2.5" 
-                  value={formData.SUBCONTRACT_FTE} 
-                  onChange={(e) => setFormData({ ...formData, SUBCONTRACT_FTE: e.target.value })} 
-                  error={errors.SUBCONTRACT_FTE} 
+                <Input
+                  name="SUBCONTRACT_FTE"
+                  label="Subcontract FTE"
+                  hint="Example: 2.5"
+                  value={formData.SUBCONTRACT_FTE}
+                  onChange={(e) => setFormData({ ...formData, SUBCONTRACT_FTE: e.target.value })}
+                  error={errors.SUBCONTRACT_FTE}
                 />
-                <Input 
-                  name="FTE_ONLY_SALARY_MIN" 
-                  label="Min Salary (FTE)" 
-                  hint="Example: 32000" 
-                  value={formData.FTE_ONLY_SALARY_MIN} 
-                  onChange={(e) => setFormData({ ...formData, FTE_ONLY_SALARY_MIN: e.target.value })} 
-                  error={errors.FTE_ONLY_SALARY_MIN} 
+                <Input
+                  name="FTE_ONLY_SALARY_MIN"
+                  label="Min Salary (FTE)"
+                  hint="Example: 32000"
+                  value={formData.FTE_ONLY_SALARY_MIN}
+                  onChange={(e) => setFormData({ ...formData, FTE_ONLY_SALARY_MIN: e.target.value })}
+                  error={errors.FTE_ONLY_SALARY_MIN}
                 />
-                <Input 
-                  name="FTE_ONLY_SALARY_MAX" 
-                  label="Max Salary (FTE)" 
-                  hint="Example: 85000" 
-                  value={formData.FTE_ONLY_SALARY_MAX} 
-                  onChange={(e) => setFormData({ ...formData, FTE_ONLY_SALARY_MAX: e.target.value })} 
-                  error={errors.FTE_ONLY_SALARY_MAX} 
+                <Input
+                  name="FTE_ONLY_SALARY_MAX"
+                  label="Max Salary (FTE)"
+                  hint="Example: 85000"
+                  value={formData.FTE_ONLY_SALARY_MAX}
+                  onChange={(e) => setFormData({ ...formData, FTE_ONLY_SALARY_MAX: e.target.value })}
+                  error={errors.FTE_ONLY_SALARY_MAX}
                 />
               </Section>
 
@@ -309,6 +312,12 @@ export default function BenchmarkEmployeeForm() {
           </table>
         </div>
       )}
+      <BenchmarkEmployeeVoiceFillButton
+        formData={formData}
+        setFormData={setFormData}
+        validateAndShowErrors={validateAndShowErrors}
+        category="Employee"
+      />
     </div>
   );
 }
