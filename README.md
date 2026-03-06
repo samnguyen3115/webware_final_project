@@ -8,6 +8,9 @@
     - JWT auth
 - Database: MongoDB
 
+## Note
+Application has to be run in **incognito** or a browser with **no extensions** to use the voice recognition feature.
+
 ## Additional Component
 - Implemented Voice Entry
     - The system allow users to trigger voice capture for filling the form
