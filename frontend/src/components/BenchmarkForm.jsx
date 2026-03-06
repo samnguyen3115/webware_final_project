@@ -170,64 +170,65 @@ export default function BenchmarkForm() {
   }, [tab]);
 
   return (
-    <div className="min-h-screen bg-[#F4F6F9]">
+    <div className="bg-[#F4F6F9]">
 
-      {/* kpi */}
-      <div className="max-w-6xl mx-auto mt-10 grid grid-cols-3 gap-6 text-center">
+      {/* kpis */}
+      <div className="w-full mt-6 grid grid-cols-3 gap-6 text-center">
         <StatCard title="Acceptance Rate" value={`${acceptanceRate}%`} />
         <StatCard title="Yield Rate" value={`${yieldRate}%`} />
         <StatCard title="Capacity Fill" value={`${capacityFill}%`} />
       </div>
 
       {/* tabs */}
-      <div className="max-w-6xl mx-auto mt-10 flex gap-4 justify-center">
+      <div className="w-full mt-8 flex gap-4 justify-center">
         <TabButton active={tab === "form"} onClick={() => { resetForm(); setTab("form"); }}>+ Create Benchmark</TabButton>
         <TabButton active={tab === "search"} onClick={() => { fetchAll(50); setTab("search"); }}>Search / Edit / Delete Benchmark</TabButton>
       </div>
 
       <BenchmarkVoiceFillButton formData={formData} setFormData={(next) => { setFormData(next); validate(next); }} validateAndShowErrors={validate} />
 
-      {/* the form */}
+      {/* form */}
       {tab === "form" && (
-        <div className="max-w-6xl mx-auto mt-10 bg-white p-12 shadow-md border border-gray-200 rounded-2xl">
-          <form onSubmit={submit} className="space-y-10">
-            <Section title="Benchmark Details">
-              <Input name="SCHOOL_YR_ID" label="School Year ID" value={formData.SCHOOL_YR_ID} onChange={(e) => setFormData({ ...formData, SCHOOL_YR_ID: e.target.value })} error={errors.SCHOOL_YR_ID} />
-              <Input name="GRADE_DEF_ID" label="Grade Definition ID" value={formData.GRADE_DEF_ID} onChange={(e) => setFormData({ ...formData, GRADE_DEF_ID: e.target.value })} error={errors.GRADE_DEF_ID} />
-              <Input name="CAPACITY_ENROLL" label="Capacity Enrollment" value={formData.CAPACITY_ENROLL} onChange={(e) => setFormData({ ...formData, CAPACITY_ENROLL: e.target.value })} error={errors.CAPACITY_ENROLL} />
-            </Section>
+        <div className="w-full mt-8">
+          <div className="bg-white p-10 shadow-md border border-gray-200 rounded-2xl">
+            <form onSubmit={submit} className="space-y-10">
+              <Section title="Benchmark Details">
+                <Input name="SCHOOL_YR_ID" label="School Year ID" hint="Example: 7" value={formData.SCHOOL_YR_ID} onChange={(e) => setFormData({ ...formData, SCHOOL_YR_ID: e.target.value })} error={errors.SCHOOL_YR_ID} />
+                <Input name="GRADE_DEF_ID" label="Grade Definition ID" hint="Example: 1" value={formData.GRADE_DEF_ID} onChange={(e) => setFormData({ ...formData, GRADE_DEF_ID: e.target.value })} error={errors.GRADE_DEF_ID} />
+                <Input name="CAPACITY_ENROLL" label="Capacity Enrollment" hint="Example: 95 (total seats available for enrollment this year)" value={formData.CAPACITY_ENROLL} onChange={(e) => setFormData({ ...formData, CAPACITY_ENROLL: e.target.value })} error={errors.CAPACITY_ENROLL} />
+              </Section>
 
-            <Section title="Contracted Enrollment">
-              <Input name="CONTRACTED_ENROLL_BOYS" label="Boys" value={formData.CONTRACTED_ENROLL_BOYS} onChange={(e) => setFormData({ ...formData, CONTRACTED_ENROLL_BOYS: e.target.value })} error={errors.CONTRACTED_ENROLL_BOYS} />
-              <Input name="CONTRACTED_ENROLL_GIRLS" label="Girls" value={formData.CONTRACTED_ENROLL_GIRLS} onChange={(e) => setFormData({ ...formData, CONTRACTED_ENROLL_GIRLS: e.target.value })} error={errors.CONTRACTED_ENROLL_GIRLS} />
-              <Input name="CONTRACTED_ENROLL_NB" label="Non-Binary" value={formData.CONTRACTED_ENROLL_NB} onChange={(e) => setFormData({ ...formData, CONTRACTED_ENROLL_NB: e.target.value })} error={errors.CONTRACTED_ENROLL_NB} />
-            </Section>
+              <Section title="Contracted Enrollment" note="Total of Boys + Girls + Non-Binary cannot exceed Capacity Enrollment.">
+                <Input name="CONTRACTED_ENROLL_BOYS" label="Boys" hint="Example: 55" value={formData.CONTRACTED_ENROLL_BOYS} onChange={(e) => setFormData({ ...formData, CONTRACTED_ENROLL_BOYS: e.target.value })} error={errors.CONTRACTED_ENROLL_BOYS} />
+                <Input name="CONTRACTED_ENROLL_GIRLS" label="Girls" hint="Example: 47" value={formData.CONTRACTED_ENROLL_GIRLS} onChange={(e) => setFormData({ ...formData, CONTRACTED_ENROLL_GIRLS: e.target.value })} error={errors.CONTRACTED_ENROLL_GIRLS} />
+                <Input name="CONTRACTED_ENROLL_NB" label="Non-Binary" hint="Example: 0" value={formData.CONTRACTED_ENROLL_NB} onChange={(e) => setFormData({ ...formData, CONTRACTED_ENROLL_NB: e.target.value })} error={errors.CONTRACTED_ENROLL_NB} />
+              </Section>
 
-            <Section title="Application Outcomes">
-              <Input name="COMPLETED_APPLICATION_TOTAL" label="Completed Applications" value={formData.COMPLETED_APPLICATION_TOTAL} onChange={(e) => setFormData({ ...formData, COMPLETED_APPLICATION_TOTAL: e.target.value })} error={errors.COMPLETED_APPLICATION_TOTAL} />
-              <Input name="ACCEPTANCES_TOTAL" label="Acceptances" value={formData.ACCEPTANCES_TOTAL} onChange={(e) => setFormData({ ...formData, ACCEPTANCES_TOTAL: e.target.value })} error={errors.ACCEPTANCES_TOTAL} />
-              <Input name="NEW_ENROLLMENTS_TOTAL" label="New Enrollments" value={formData.NEW_ENROLLMENTS_TOTAL} onChange={(e) => setFormData({ ...formData, NEW_ENROLLMENTS_TOTAL: e.target.value })} error={errors.NEW_ENROLLMENTS_TOTAL} />
-            </Section>
+              <Section title="Application Outcomes">
+                <Input name="COMPLETED_APPLICATION_TOTAL" label="Completed Applications" hint="Example: 71 (cannot be less than Acceptances)" value={formData.COMPLETED_APPLICATION_TOTAL} onChange={(e) => setFormData({ ...formData, COMPLETED_APPLICATION_TOTAL: e.target.value })} error={errors.COMPLETED_APPLICATION_TOTAL} />
+                <Input name="ACCEPTANCES_TOTAL" label="Acceptances" hint="Example: 56 (cannot exceed Completed Applications)" value={formData.ACCEPTANCES_TOTAL} onChange={(e) => setFormData({ ...formData, ACCEPTANCES_TOTAL: e.target.value })} error={errors.ACCEPTANCES_TOTAL} />
+                <Input name="NEW_ENROLLMENTS_TOTAL" label="New Enrollments" hint="Example: 42 (cannot exceed Acceptances)" value={formData.NEW_ENROLLMENTS_TOTAL} onChange={(e) => setFormData({ ...formData, NEW_ENROLLMENTS_TOTAL: e.target.value })} error={errors.NEW_ENROLLMENTS_TOTAL} />
+              </Section>
 
-            <ArrowButton type="submit" fullWidth>
-              {editingYear ? "Update Benchmark Record" : "Save Benchmark Record"}
-            </ArrowButton>
+              <ArrowButton type="submit" fullWidth>
+                {editingYear ? "Update Benchmark Record" : "Save Benchmark Record"}
+              </ArrowButton>
 
-            <button
-              type="button"
-              onClick={resetForm}
-              className="w-full py-3 text-lg font-semibold rounded-lg text-gray-600 bg-gray-200 hover:bg-gray-300 transition-all duration-300"
-            >
-              Reset Form
-            </button>
-
-          </form>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="w-full py-3 text-lg font-semibold rounded-lg text-white bg-[#4B5563] hover:bg-[#374151] transition-all duration-300"
+              >
+                Reset Form
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
-      {/* searching */}
+      {/* search */}
       {tab === "search" && (
-        <div className="max-w-6xl mx-auto mt-10">
+        <div className="w-full mt-8">
           <div className="flex gap-4 mb-6">
             <input
               type="text"
@@ -237,7 +238,7 @@ export default function BenchmarkForm() {
               className="border p-3 rounded flex-1 focus:ring-2 focus:ring-[#0F2D52] outline-none"
             />
             <ArrowButton onClick={searchByYearId} bg="#0F2D52" hoverBg="#1a4a7a" textColor="white">Search</ArrowButton>
-            <ArrowButton onClick={() => fetchAll(50)} bg="#6B7280" hoverBg="#4B5563" textColor="white">Reset</ArrowButton>
+            <ArrowButton onClick={() => fetchAll(50)} bg="#4B5563" hoverBg="#374151" textColor="white">Reset</ArrowButton>
           </div>
 
           <table className="w-full border rounded-lg overflow-hidden shadow">
@@ -261,7 +262,7 @@ export default function BenchmarkForm() {
                   <td className="p-3">{rec.COMPLETED_APPLICATION_TOTAL}</td>
                   <td className="p-3">{rec.ACCEPTANCES_TOTAL}</td>
                   <td className="p-3">{rec.NEW_ENROLLMENTS_TOTAL}</td>
-                  <td className="py-2 flex justify-center gap-6 min-w-40">
+                  <td className="py-2 flex justify-center gap-6 min-w-[160px]">
                     <ArrowButton onClick={() => loadForEdit(rec)} small>Edit</ArrowButton>
                     <ArrowButton onClick={() => deleteRecord(rec.SCHOOL_YR_ID)} small bg="#D94141" hoverBg="#B23030" textColor="white">Delete</ArrowButton>
                   </td>
@@ -277,21 +278,29 @@ export default function BenchmarkForm() {
   );
 }
 
-function Section({ title, children }) {
+function Section({ title, children, note }) {
   return (
     <div>
       <h2 className="text-2xl font-semibold text-[#0F2D52] mb-6 border-b pb-2">{title}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">{children}</div>
+      {note && <p className="text-gray-500 text-sm mt-4 italic">Note: {note}</p>}
     </div>
   );
 }
 
-function Input({ name, label, value, onChange, error }) {
+function Input({ name, label, hint, value, onChange, error }) {
   return (
     <div>
       <label className="block font-semibold mb-2 text-lg">{label} <span className="text-red-600">*</span></label>
-      <input type="number" name={name} value={value} onChange={onChange} className="w-full border px-4 py-4 text-lg rounded focus:ring-2 focus:ring-[#0F2D52] outline-none" />
-      {error && <p className="text-red-600 mt-2">{error}</p>}
+      <input
+        type="number"
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full border px-4 py-4 text-lg rounded focus:ring-2 focus:ring-[#0F2D52] outline-none"
+      />
+      {hint && <p className="text-gray-400 text-sm mt-1">{hint}</p>}
+      {error && <p className="text-red-600 mt-1 text-sm">{error}</p>}
     </div>
   );
 }
@@ -316,7 +325,6 @@ function TabButton({ active, children, onClick }) {
   );
 }
 
-/* arrows */
 function ArrowButton({ children, onClick, bg = "#FFA500", hoverBg = "#f39200", textColor = "#000", small, fullWidth, type = "button" }) {
   return (
     <button

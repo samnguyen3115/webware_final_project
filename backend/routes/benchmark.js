@@ -20,6 +20,7 @@ function parseNumber(value) {
   return Number.isFinite(parsed) ? parsed : NaN;
 }
 
+// post
 router.post("/", auth, async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -66,7 +67,7 @@ router.post("/", auth, async (req, res) => {
 
     payload.ID = lastRecord ? +lastRecord.ID + 1 : 1;
 
-    console.log(payload)
+    console.log(payload);
 
     const benchmark = new Benchmark(payload);
     await benchmark.save();
@@ -77,6 +78,59 @@ router.post("/", auth, async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: "Error saving data" });
+  }
+});
+
+// get all
+router.get("/", auth, async (req, res) => {
+  try {
+    let limit = parseInt(req.query.limit) || 0;
+    const benchmarks = limit > 0
+      ? await Benchmark.find().limit(limit)
+      : await Benchmark.find();
+    res.json(benchmarks);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch benchmarks" });
+  }
+});
+
+// get by school year id
+router.get("/year/:yearId", auth, async (req, res) => {
+  try {
+    const year = Number(req.params.yearId);
+    const benchmark = await Benchmark.findOne({ SCHOOL_YR_ID: year });
+    if (!benchmark) return res.status(404).json({ error: "Record not found" });
+    res.json(benchmark);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch benchmark" });
+  }
+});
+
+// update
+router.put("/year/:yearId", auth, async (req, res) => {
+  try {
+    const yearId = Number(req.params.yearId);
+    const benchmark = await Benchmark.findOneAndUpdate(
+      { SCHOOL_YR_ID: yearId },
+      { ...req.body },
+      { new: true, runValidators: true }
+    );
+    if (!benchmark) return res.status(404).json({ error: "Record not found" });
+    res.json({ message: "Updated successfully", benchmark });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update benchmark" });
+  }
+});
+
+// delete
+router.delete("/year/:yearId", auth, async (req, res) => {
+  try {
+    const yearId = Number(req.params.yearId);
+    const benchmark = await Benchmark.findOneAndDelete({ SCHOOL_YR_ID: yearId });
+    if (!benchmark) return res.status(404).json({ error: "Record not found" });
+    res.json({ message: "Deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete benchmark" });
   }
 });
 
